@@ -1,357 +1,374 @@
-let terminal = {
-    x: 0,
-    y: 0,
-    status: 0, // Response code set by returning program
-    debugMode: false,
-    defaultTimeout: 0,
-    columns: 60,
-    rows: 20,
-    display: {
-        prompt: "$\u0000",
-        carrot: "█",
-        color: "white",
-        data: [],
-    },
-    program: {
-        input: [],
-        variables: {},
-        suppressOutput: false,
-    },
-    registeredCmd: {}
-} ;
+class ChromeTerminal {
+    terminal = {
+        x: 0,
+        y: 0,
+        status: 0, // Response code set by returning program
+        debugMode: false,
+        defaultTimeout: 0,
+        columns: 60,
+        rows: 20,
+        display: {
+            prompt: "$\u0000",
+            carrot: "█",
+            color: "white",
+            data: [],
+        },
+        program: {
+            input: [],
+            variables: {},
+            suppressOutput: false,
+        },
+        registeredCmd: {},
+        localStoragePrefix: "chrome-term"
+    } ;
 
-function initWindow(columns, rows, timeout, debugMode) {
-    if(columns < 30) throw "Minimum of 30 columns."
-    if(columns > 100) throw "Maximum of 100 columns."
-    if(rows < 15) throw "Minimum of 15 rows required."
-    if(rows > 100) throw "Maximum of 100 rows."
+    constructor(columns, rows, timeout, options = {}) {
+        if(columns < 30) throw "Minimum of 30 columns."
+        if(columns > 100) throw "Maximum of 100 columns."
+        if(rows < 15) throw "Minimum of 15 rows required."
+        if(rows > 100) throw "Maximum of 100 rows."
 
-    try {
-        let jsTerminalProgramInputJson = localStorage.getItem('js-terminal--programInput');
-        let tmpProgramInput = JSON.parse(jsTerminalProgramInputJson) ;
-        if( tmpProgramInput !== null) terminal.program.input = tmpProgramInput ;
-    } catch(e) {}
+        try {
+            let jsTerminalProgramInputJson = localStorage.getItem(`${this.terminal.localStoragePrefix}--programInput`);
+            let tmpProgramInput = JSON.parse(jsTerminalProgramInputJson) ;
+            if( tmpProgramInput !== null) this.terminal.program.input = tmpProgramInput ;
+        } catch(e) {}
 
-    terminal.columns = columns ;
-    terminal.rows = rows ;
-    if( timeout > 0 && typeof timeout === "number")
-        terminal.defaultTimeout = timeout ;
+        this.terminal.columns = columns ;
+        this.terminal.rows = rows ;
+        if( timeout > 0 && typeof timeout === "number")
+            this.terminal.defaultTimeout = timeout ;
 
-    let $terminalContainer = $("#terminal-container") ;
+        let $terminalContainer = $("#terminal-container") ;
 
-    // Add required HTML elements
-    $terminalContainer
-        .attr("inputmode", "text")
-        .attr("tabindex", "0")
-        .attr("onfocus", "$('#terminal-input').focus();")
-        .html(
-            "<div id=\"terminal-window\"></div>" +
-            "<label style=\"display: block; opacity: 0;\">" +
-            "<input id=\"terminal-input\" type=\"text\" inputmode=\"text\" style=\"display:block; width:100%;\"/>" +
-            "</label>"
-        );
+        // Add required HTML elements
+        $terminalContainer
+            .attr("inputmode", "text")
+            .attr("tabindex", "0")
+            .html(
+                "<div id=\"terminal-window\"></div>" +
+                "<label style=\"display: block; opacity: 0;\">" +
+                "<input id=\"terminal-input\" type=\"text\" inputmode=\"text\" style=\"display:block; width:100%;\"/>" +
+                "</label>"
+            );
 
-    if(debugMode) {
-        terminal.debugMode = true ;
-        $terminalContainer.append(
-            $("<pre id='debug-output'></pre>").css("width", (12*columns) + "px" )
-        ) ;
-    }
+        $terminalContainer.on("focus", () => {
+            $('#terminal-input').focus();
+        }) ;
 
-    for(let y = 0 ; y < rows ; y++) {
-        $("#terminal-window").append(`<div class="char-row char-row-${y}"></div>`) ;
-        let $charRow = $(`.char-row-${y}`) ;
-        terminal.display.data[y] = [] ;
-        for(let x = 0 ; x < columns ; x++) {
-            $charRow.append(`<div class="char-box char-box-${x}"></div>`) ;
+        if(options.debugMode) {
+            this.terminal.debugMode = true ;
+            $terminalContainer.append(
+                $("<pre id='debug-output'></pre>").css("width", (12*columns) + "px" )
+            ) ;
+        }
+
+        for(let y = 0 ; y < rows ; y++) {
+            $("#terminal-window").append(`<div class="char-row char-row-${y}"></div>`) ;
+            let $charRow = $(`.char-row-${y}`) ;
+            this.terminal.display.data[y] = [] ;
+            for(let x = 0 ; x < columns ; x++) {
+                $charRow.append(`<div class="char-box char-box-${x}"></div>`) ;
+            }
         }
     }
-}
 
-function insertNewLine() {
-    terminal.y++ ;
-    if( terminal.y === terminal.rows ) {
-        scrollTerminalContents() ;
+    insertNewLine() {
+        this.terminal.y++ ;
+        if( this.terminal.y === this.terminal.rows ) {
+            this.scrollTerminalContents() ;
+        }
+        this.terminal.x = 0 ;
     }
-    terminal.x = 0 ;
-}
 
-function backspace() {
-    if(terminal.x === 0) {
-        if(terminal.y === 0) return ;
-        terminal.y-- ;
-        terminal.x = terminal.columns ;
+    backspace() {
+        if(this.terminal.x === 0) {
+            if(this.terminal.y === 0) return ;
+            this.terminal.y-- ;
+            this.terminal.x = this.terminal.columns ;
+        }
+        this.terminal.x-- ;
     }
-    terminal.x-- ;
-}
 
-function scrollTerminalContents() {
-    for(let row in terminal.display.data) {
-        if( row > 0 )
-            terminal.display.data[row-1] = terminal.display.data[row] ;
+    scrollTerminalContents() {
+        for(let row in this.terminal.display.data) {
+            if( row > 0 )
+                this.terminal.display.data[row-1] = this.terminal.display.data[row] ;
+        }
+        this.terminal.display.data[this.terminal.display.data.length-1] = [] ;
+        $(".char-box").text("") ;
+        this.refresh() ;
+        this.terminal.y-- ;
     }
-    terminal.display.data[terminal.display.data.length-1] = [] ;
-    $(".char-box").text("") ;
-    refresh() ;
-    terminal.y-- ;
-}
 
-function returnStatus() {
-    return terminal.status ;
-}
+    returnStatus() {
+        return this.terminal.status ;
+    }
 
-function clr() {
-    $(".char-box").text("") ;
-    for(let y in terminal.display.data) {
-        for(let x in terminal.display.data[y]) {
-            terminal.display.data[y][x] = { char: "&nbsp;", color: terminal.display.color } ;
+    clr() {
+        $(".char-box").text("") ;
+        for(let y in this.terminal.display.data) {
+            for(let x in this.terminal.display.data[y]) {
+                this.terminal.display.data[y][x] = { char: "&nbsp;", color: this.terminal.display.color } ;
+            }
         }
     }
-}
 
-function refresh() {
-    for(let y = 0 ; y < terminal.rows ; y++) {
-        let $charRow = $(`.char-row-${y}`) ;
-        for(let x = 0 ; x < terminal.columns ; x++) {
-            if( terminal.display.data[y] && terminal.display.data[y][x] )
-                $charRow.find(`.char-box-${x}`).html( $(`<span style='color: ${terminal.display.data[y][x].color};'>${terminal.display.data[y][x].char}</span>`) ) ;
-            else
-                $charRow.find(`.char-box-${x}`).html("") ;
+    refresh() {
+        for(let y = 0 ; y < this.terminal.rows ; y++) {
+            let $charRow = $(`.char-row-${y}`) ;
+            for(let x = 0 ; x < this.terminal.columns ; x++) {
+                if( this.terminal.display.data[y] && this.terminal.display.data[y][x] )
+                    $charRow.find(`.char-box-${x}`).html(
+                        $(`<span style='color: ${this.terminal.display.data[y][x].color};'>${this.terminal.display.data[y][x].char}</span>`)
+                    ) ;
+                else
+                    $charRow.find(`.char-box-${x}`).html("") ;
+            }
         }
     }
-}
 
-async function incrementCharPos(timeout) {
-    terminal.x++ ;
-    if(terminal.x === terminal.columns)
-        insertNewLine() ;
-    if( timeout > 0 )
-        await sleep( timeout ) ;
-}
+    async incrementCharPos(timeout) {
+        this.terminal.x++ ;
+        if(this.terminal.x === this.terminal.columns)
+            this.insertNewLine() ;
+        if( timeout > 0 )
+            await this.sleep( timeout ) ;
+    }
 
-function setCharPos(x, y) {
-    if( isNaN(x) || x >= terminal.columns ) throw "x coordinate "+x+" out of bounds."
-    if( isNaN(y) || y >= terminal.rows )    throw "y coordinate "+y+" out of bounds."
+    setCharPos(x, y) {
+        if( isNaN(x) || x >= this.terminal.columns )
+            throw "x coordinate "+x+" out of bounds."
+        if( isNaN(y) || y >= this.terminal.rows )
+            throw "y coordinate "+y+" out of bounds."
 
-    terminal.x = x ;
-    terminal.y = y ;
-}
+        this.terminal.x = x ;
+        this.terminal.y = y ;
+    }
 
-function insertCarrot(carrot) {
-    $(`.char-row-${terminal.y} .char-box-${terminal.x}`).html(carrot);
-}
+    insertCarrot(carrot) {
+        $(`.char-row-${this.terminal.y} .char-box-${this.terminal.x}`).html(carrot);
+    }
 
-async function print(data, timeout) {
-    timeout = typeof timeout === "number" && timeout >= 0 ? timeout : terminal.defaultTimeout ;
-    if(terminal.program.suppressOutput) return ;
+    async print(data, timeout) {
+        timeout = typeof timeout === "number" && timeout >= 0 ? timeout : this.terminal.defaultTimeout ;
+        if(this.terminal.program.suppressOutput) return ;
 
-    let chars = data.split("") ;
+        let chars = data.split("") ;
 
-    for( let c in chars ) {
-        let $charBox = $(`.char-row-${terminal.y} .char-box-${terminal.x}`) ;
+        for( let c in chars ) {
+            let $charBox = $(`.char-row-${this.terminal.y} .char-box-${this.terminal.x}`) ;
 
-        switch(chars[c]) {
-            case "\n":
-                insertNewLine() ;
+            switch(chars[c]) {
+                case "\n":
+                    this.insertNewLine() ;
+                    break ;
+                case " ":
+                    this.terminal.display.data[this.terminal.y][this.terminal.x] = {
+                        char: "&nbsp;",
+                        color: this.terminal.display.color
+                    } ;
+                    $charBox.html("&nbsp;") ;
+                    await this.incrementCharPos(timeout) ;
+                    break ;
+                default:
+                    this.terminal.display.data[this.terminal.y][this.terminal.x] = {
+                        char: chars[c],
+                        color: this.terminal.display.color
+                    } ;
+                    $charBox.html($(`<span style='color: ${this.terminal.display.color};'></span>`).text(chars[c])) ;
+                    await this.incrementCharPos(timeout) ;
+                    break ;
+            }
+        }
+    }
+
+    async println(data, timeout) {
+        data += "\n" ;
+        await this.print(data, timeout) ;
+    }
+
+    async printAt(data, x, y, timeout) {
+        this.setCharPos(x, y) ;
+        await this.print(data, timeout) ;
+    }
+
+    async printlnAt(data, x, y, timeout) {
+        data += "\n" ;
+        await this.printAt(data, x, y, timeout) ;
+    }
+
+    async inputText(prompt) {
+        prompt = prompt ? prompt : this.terminal.display.prompt ;
+
+        await this.print(prompt) ;
+
+        $(`.char-row-${this.terminal.y} .char-box-${this.terminal.x}`).html(this.terminal.display.carrot) ;
+
+        return new Promise((resolve) => {
+            let userIn = [] ;
+            this.initListeners(this.parseInput.bind(this), userIn, resolve) ;
+        });
+    }
+
+    initListeners(callback, userIn, resolve) {
+        let $terminalInput = $("#terminal-input") ;
+
+        $("#terminal-container").on("keydown", e => {
+            if( $terminalInput.val() === "" ) {
+                this.logDebugInfo("e.which = " + e.which + "; e.keyCode = " + e.keyCode);
+                callback(e.keyCode, e.key, userIn, resolve, $terminalInput.is(":focus"));
+            }
+        }) ;
+
+        // Mobile workaround
+        $terminalInput.on("input", e => {
+            let chars = $terminalInput.val().split("") ;
+            this.logDebugInfo("charToKeyCode(chars[i]) = " + this.charToKeyCode(chars[0]) + "; chars[0] = " + chars[0]) ;
+            for(let i in chars) {
+                callback(this.charToKeyCode(chars[i]), chars[i], userIn, resolve);
+            }
+            $terminalInput.val("") ;
+        }) ;
+    }
+
+    removeListeners() {
+        $("#terminal-container").off("keydown") ;
+        $("#terminal-input").off("input") ;
+    }
+
+    charToKeyCode(char) {
+        let asciiCode = char.toUpperCase().charCodeAt(0) ;
+        if ((asciiCode > 47  && asciiCode < 58) || // number keys
+            asciiCode === 32                    || // space bar
+            (asciiCode > 64  && asciiCode < 91)) { // [\]' (in order)
+            return asciiCode ;
+        }
+
+        let keyVals = {
+            "!": 49, "@": 50, "#": 51, "$": 52, "%": 53, "^": 54, "&": 55, "*": 56,
+            "(": 57, ")": 48, "-": 189, "=": 187, "[": 219, "]": 221, "\\": 220, ";": 186,
+            "'": 222, ",": 188, ".": 190, "/": 191, "`": 192, "~": 192, "{": 219, "}": 221,
+            "|": 220, ":": 186, "\"": 222, "<": 188, ">": 190, "?": 191
+        }
+        return keyVals[char] ;
+    }
+
+    async parseInput(keyCode, char, userIn, resolve, limit) {
+        switch(keyCode) {
+            case 13:
+                this.removeListeners() ;
+                this.insertCarrot("") ;
+                await this.print("\n", 0) ;
+                resolve(userIn.join("")) ;
                 break ;
-            case " ":
-                terminal.display.data[terminal.y][terminal.x] = { char: "&nbsp;", color: terminal.display.color } ;
-                $charBox.html("&nbsp;") ;
-                await incrementCharPos(timeout) ;
+            case 8:
+                this.insertCarrot("") ;
+                this.backspace() ;
+                this.insertCarrot(this.terminal.display.carrot);
+                userIn.pop() ;
                 break ;
             default:
-                terminal.display.data[terminal.y][terminal.x] = { char: chars[c], color: terminal.display.color } ;
-                $charBox.html($(`<span style='color: ${terminal.display.color};'></span>`).text(chars[c])) ;
-                await incrementCharPos(timeout) ;
+                if( limit ) break ;
+                if ((keyCode > 47  && keyCode < 58)    || // number keys
+                    keyCode === 32                     || // space bar
+                    (keyCode > 64  && keyCode < 91)    || // letter keys
+                    (keyCode > 95  && keyCode < 112)   || // numpad keys
+                    (keyCode > 185 && keyCode < 193)   || // ;=,-./` (in order)
+                    (keyCode > 218 && keyCode < 223)) {   // [\]' (in order)
+                    char = char.toUpperCase() ;
+                    userIn.push(char);
+                    await this.print(char, 0);
+                    this.insertCarrot(this.terminal.display.carrot);
+                }
                 break ;
         }
     }
-}
 
-async function println(data, timeout) {
-    data += "\n" ;
-    await print(data, timeout) ;
-}
+    /**
+     * Takes a command, prints to screen, then returns output.
+     *
+     * @param command
+     * @returns {Promise<string>}
+     */
+    async processCmd(command) {
+        if( command === "" ) return "" ;
 
-async function printAt(data, x, y, timeout) {
-    setCharPos(x, y) ;
-    await print(data, timeout) ;
-}
+        this.logDebugInfo("Incoming command: " + command) ;
 
-async function printlnAt(data, x, y, timeout) {
-    data += "\n" ;
-    await printAt(data, x, y, timeout) ;
-}
+        let args = command.split(" ") ;
 
-async function inputText(prompt) {
-    prompt = prompt ? prompt : terminal.display.prompt ;
-
-    await print(prompt) ;
-
-    $(`.char-row-${terminal.y} .char-box-${terminal.x}`).html(terminal.display.carrot) ;
-
-    return new Promise((resolve) => {
-        let userIn = [] ;
-        initListeners(parseInput, userIn, resolve) ;
-    });
-}
-
-function initListeners(callback, userIn, resolve) {
-    let $terminalInput = $("#terminal-input") ;
-
-    $("#terminal-container").keydown(e => {
-        if( $terminalInput.val() === "" ) {
-            logDebugInfo("e.which = " + e.which + "; e.keyCode = " + e.keyCode);
-            callback(e.keyCode, e.key, userIn, resolve, $terminalInput.is(":focus"));
+        let cmd = args[0].toUpperCase() ;
+        if( typeof this.terminal.registeredCmd[cmd] !== "undefined" ) {
+            return await this.terminal.registeredCmd[cmd].callback(args) ;
         }
-    }) ;
 
-    // Mobile workaround
-    $terminalInput.on("input", e => {
-        let chars = $terminalInput.val().split("") ;
-        logDebugInfo("charToKeyCode(chars[i]) = " + charToKeyCode(chars[0]) + "; chars[0] = " + chars[0]) ;
-        for(let i in chars) {
-            callback(charToKeyCode(chars[i]), chars[i], userIn, resolve);
+        // If this is a line number, add it to the program.input array
+        if(!isNaN(args[0])) {
+            let lineNum = parseInt(args[0]) ;
+            this.terminal.program.input[lineNum] = args.slice(1).join(" ") ;
+            await this.setLocalStorage() ;
+            return args.slice(1).join(" ") ;
         }
-        $terminalInput.val("") ;
-    }) ;
-}
 
-function removeListeners() {
-    $("#terminal-container").off("keydown") ;
-    $("#terminal-input").off("input") ;
-}
-
-function charToKeyCode(char) {
-    let asciiCode = char.toUpperCase().charCodeAt(0) ;
-    if ((asciiCode > 47  && asciiCode < 58) || // number keys
-         asciiCode === 32                   || // space bar
-        (asciiCode > 64  && asciiCode < 91)) { // [\]' (in order)
-        return asciiCode ;
+        let out = "\"" + args[0] + "\" is not recognized as a valid command."
+        await this.println( out ) ;
+        return out ;
     }
 
-    let keyVals = {
-        "!": 49, "@": 50, "#": 51, "$": 52, "%": 53, "^": 54, "&": 55, "*": 56,
-        "(": 57, ")": 48, "-": 189, "=": 187, "[": 219, "]": 221, "\\": 220, ";": 186,
-        "'": 222, ",": 188, ".": 190, "/": 191, "`": 192, "~": 192, "{": 219, "}": 221,
-        "|": 220, ":": 186, "\"": 222, "<": 188, ">": 190, "?": 191
-    }
-    return keyVals[char] ;
-}
-
-async function parseInput(keyCode, char, userIn, resolve, limit) {
-    switch(keyCode) {
-        case 13:
-            removeListeners() ;
-            insertCarrot("") ;
-            await print("\n", 0) ;
-            resolve(userIn.join("")) ;
-            break ;
-        case 8:
-            insertCarrot("") ;
-            backspace() ;
-            insertCarrot(terminal.display.carrot);
-            userIn.pop() ;
-            break ;
-        default:
-            if( limit ) break ;
-            if ((keyCode > 47  && keyCode < 58)    || // number keys
-                 keyCode === 32                    || // space bar
-                (keyCode > 64  && keyCode < 91)    || // letter keys
-                (keyCode > 95  && keyCode < 112)   || // numpad keys
-                (keyCode > 185 && keyCode < 193)   || // ;=,-./` (in order)
-                (keyCode > 218 && keyCode < 223)) {   // [\]' (in order)
-                char = char.toUpperCase() ;
-                userIn.push(char);
-                await print(char, 0);
-                insertCarrot(terminal.display.carrot);
-            }
-            break ;
-    }
-}
-
-/**
- * Takes a command, prints to screen, then returns output.
- *
- * @param command
- * @returns {Promise<string>}
- */
-async function processCmd(command) {
-    if( command === "" ) return "" ;
-
-    logDebugInfo("Incoming command: " + command) ;
-
-    let args = command.split(" ") ;
-
-    let cmd = args[0].toUpperCase() ;
-    if( typeof terminal.registeredCmd[cmd] !== "undefined" ) {
-        return await terminal.registeredCmd[cmd].callback(args) ;
+    /**
+     * Registers a new command with the terminal
+     * @param name    - The command name
+     * @param options - The command options
+     *   example: { args: [ "x", "y" ], callback: setCursorCmd }
+     */
+    registerCmd(name, options) {
+        this.terminal.registeredCmd[name] = options;
+        this.terminal.registeredCmd = this.sortObject(this.terminal.registeredCmd) ;
     }
 
-    // If this is a line number, add it to the program.input array
-    if(!isNaN(args[0])) {
-        let lineNum = parseInt(args[0]) ;
-        terminal.program.input[lineNum] = args.slice(1).join(" ") ;
-        setLocalStorage() ;
-        return args.slice(1).join(" ") ;
+    async startInputLoop() {
+        let command = ""
+        while(command.toUpperCase() !== "EXIT") {
+            command = await this.inputText() ;
+            let output = await this.processCmd(command) ;
+            if(this.returnStatus() !== 0)
+                await this.println("Command returned non-zero status code: " + this.returnStatus()) ;
+            this.logDebugInfo("Command output: " + output) ;
+        }
+        return this.returnStatus() ;
     }
 
-    let out = "\"" + args[0] + "\" is not recognized as a valid command."
-    await println( out ) ;
-    return out ;
-}
-
-/**
- * Registers a new command with the terminal
- * @param name    - The command name
- * @param options - The command options
- *   example: { args: [ "x", "y" ], callback: setCursorCmd }
- */
-function registerCmd(name, options) {
-    terminal.registeredCmd[name] = options;
-    terminal.registeredCmd = sortObject(terminal.registeredCmd) ;
-}
-
-async function startInputLoop() {
-    let command = ""
-    while(command.toUpperCase() !== "EXIT") {
-        command = await inputText() ;
-        let output = await processCmd(command) ;
-        if(returnStatus() !== 0)
-            await println("Command returned non-zero status code: " + returnStatus()) ;
-        logDebugInfo("Command output: " + output) ;
+    async setLocalStorage() {
+        let jsonString = JSON.stringify(this.terminal.program.input) ;
+        localStorage.setItem(`${this.terminal.localStoragePrefix}--programInput`, jsonString);
     }
-    return returnStatus() ;
-}
 
-async function setLocalStorage() {
-    let jsonString = JSON.stringify(terminal.program.input) ;
-    localStorage.setItem('js-terminal--programInput', jsonString);
-}
+    async sleep(timeout) {
+        return new Promise((resolve, reject) => {
+            setTimeout(() => {
+                resolve();
+            }, timeout);
+        });
+    }
 
-async function sleep(timeout) {
-    return new Promise((resolve, reject) => {
-        setTimeout(() => {
-            resolve();
-        }, timeout);
-    });
-}
+    sortObject(unordered) {
+        return Object.keys(unordered).sort().reduce(
+            (obj, key) => {
+                obj[key] = unordered[key];
+                return obj;
+            },
+            {}
+        );
+    }
 
-function sortObject(unordered) {
-    return Object.keys(unordered).sort().reduce(
-        (obj, key) => {
-            obj[key] = unordered[key];
-            return obj;
-        },
-        {}
-    );
-}
+    rnd(max) {
+        return Math.floor(Math.random() * (parseInt(max)+1));
+    }
 
-function rnd(max) {
-    return Math.floor(Math.random() * (parseInt(max)+1));
-}
-
-function logDebugInfo(msg) {
-    if( !terminal.debugMode ) return ;
-    $("#debug-output").prepend( msg + "\n" );
+    logDebugInfo(msg) {
+        if( !this.terminal.debugMode ) return ;
+        $("#debug-output").prepend( msg + "\n" );
+        console.debug(msg) ;
+    }
 }

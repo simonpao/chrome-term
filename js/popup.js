@@ -1,15 +1,16 @@
 try {
-    initWindow(60, 25, 0, false);
-    registerDefaultCommands();
+    let terminal = new ChromeTerminal(60, 25, 0) ;
+    registerDefaultCommands(terminal);
+
+    terminal.registerCmd( "SNAKE", {
+        args: [ "length", "maxLength" ],
+        callback: snake.bind(terminal)
+    }) ;
+
+    $("#terminal-input").focus();
+
+    await terminal.print("Simon:~/") ;
+    await terminal.startInputLoop() ;
 } catch(e) {
-    alert(e) ;
+    console.error(e) ;
 }
-
-registerCmd( "SNAKE", {
-    args: [ "length", "maxLength" ],
-    callback: snake
-}) ;
-
-$("#terminal-input").focus();
-
-await startInputLoop() ;
