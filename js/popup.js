@@ -9,7 +9,7 @@ try {
 
     $("#terminal-input").focus();
 
-    await terminal.print("Simon:~/") ;
+    //await terminal.print("Simon:~/") ;
     await terminal.startInputLoop() ;
 } catch(e) {
     console.error(e) ;
