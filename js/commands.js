@@ -387,7 +387,7 @@ async function colorCmd(args) {
         case "green":
         case "blue":
         case "yellow":
-        case "purple":
+        case "orange":
             this.terminal.display.color = color ;
             this.terminal.status = 0 ;
             return "" ;

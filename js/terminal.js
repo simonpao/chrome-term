@@ -159,9 +159,12 @@ class ChromeTerminal {
         $(`.char-row-${this.terminal.y} .char-box-${this.terminal.x}`).html(carrot);
     }
 
-    async print(data, timeout) {
+    async print(data, timeout, color) {
         timeout = typeof timeout === "number" && timeout >= 0 ? timeout : this.terminal.defaultTimeout ;
         if(this.terminal.program.suppressOutput) return ;
+
+        if(typeof color === "undefined")
+            color = this.terminal.display.color ;
 
         let chars = data.split("") ;
 
@@ -175,7 +178,7 @@ class ChromeTerminal {
                 case " ":
                     this.terminal.display.data[this.terminal.y][this.terminal.x] = {
                         char: "&nbsp;",
-                        color: this.terminal.display.color
+                        color: color
                     } ;
                     $charBox.html("&nbsp;") ;
                     await this.incrementCharPos(timeout) ;
@@ -183,9 +186,9 @@ class ChromeTerminal {
                 default:
                     this.terminal.display.data[this.terminal.y][this.terminal.x] = {
                         char: chars[c],
-                        color: this.terminal.display.color
+                        color: color
                     } ;
-                    $charBox.html($(`<span style='color: ${this.terminal.display.color};'></span>`).text(chars[c])) ;
+                    $charBox.html($(`<span style='color: var(--${color});'></span>`).text(chars[c])) ;
                     await this.incrementCharPos(timeout) ;
                     break ;
             }

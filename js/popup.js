@@ -9,7 +9,9 @@ try {
 
     $("#terminal-input").focus();
 
-    //await terminal.print("Simon:~/") ;
+    await terminal.print("Simon", 0, "green") ;
+    await terminal.print(":", 0, "white") ;
+    await terminal.print("~/", 0, "blue") ;
     await terminal.startInputLoop() ;
 } catch(e) {
     console.error(e) ;
