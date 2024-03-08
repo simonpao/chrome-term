@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "Chrome Terminal",
+  "description": "A CLI for chrome.",
+  "version": "1.0.0",
+  "icons": {
+    "16": "images/term-16.png",
+    "32": "images/term-32.png",
+    "48": "images/term-48.png",
+    "128": "images/term-128.png"
+  },
+  "action": {
+    "default_popup": "./popup.html"
+  },
+  "background": {
+    "service_worker": "./js/service-worker.js"
+  },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+Space",
+        "mac": "MacCtrl+Command+Space"
+      }
+    }
+  },
+  "permissions": [
+    "bookmarks",
+    "tabGroups",
+    "tabs"
+  ]
+}
