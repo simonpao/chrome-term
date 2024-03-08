@@ -82,12 +82,21 @@ class ChromeTerminal {
     }
 
     backspace() {
-        if(this.terminal.x === 0) {
-            if(this.terminal.y === 0) return ;
-            this.terminal.y-- ;
-            this.terminal.x = this.terminal.columns ;
+        let x = this.terminal.x ;
+        let y = this.terminal.y ;
+
+        if(x === 0) {
+            if(y === 0) return ;
+            y-- ;
+            x = this.terminal.columns ;
         }
-        this.terminal.x-- ;
+        x-- ;
+
+        if(this.terminal.display.data[y][x].char === "\u0000")
+            return ;
+
+        this.terminal.x = x ;
+        this.terminal.y = y ;
     }
 
     scrollTerminalContents() {
