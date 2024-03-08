@@ -1,0 +1,70 @@
+:root {
+    --blue: #005cc8 ;
+    --red: #c62828 ;
+    --green: #56c465 ;
+    --yellow: #e5c23b ;
+    --purple: #300a24 ;
+    --orange: #f18442 ;
+    --teal: #3be5aa ;
+    --gray: #5c5c5c ;
+    --light-gray: #d3d3d3 ;
+    --off-white: #dbdce1;
+    --white: #ffffff;
+    --black: #000000;
+    --dark: #333333;
+}
+
+body {
+    color: var(--blue) ;
+    padding: 0;
+    margin: 0;
+    overflow-y: hidden;
+    background-color: var(--dark);
+    width: max-content;
+    height: max-content;
+}
+
+#terminal-container {
+    margin: auto;
+    width: max-content;
+}
+
+#terminal-container #terminal-window {
+    padding: 5px 10px;
+    border: 5px solid var(--light-gray);
+    background-color: var(--purple);
+    color: var(--white);
+    font-weight: bold;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+#terminal-container #terminal-window .char-row {
+    font-family: "Courier New", Courier, monospace;
+    font-size: 18px;
+    position: relative;
+    height: 20px;
+    margin: 0;
+    padding: 0;
+}
+
+#terminal-container #terminal-window .char-row .char-box {
+    width: 12px;
+    display: inline-block;
+}
+
+#terminal-input {
+    position: absolute;
+    top: 0;
+    z-index: -1;
+}
+
+#debug-output {
+    background-color: var(--off-white);
+    border: 1px solid black;
+    margin-top: 5px;
+    padding:5px;
+    min-height:50px;
+    max-height:350px;
+    overflow: auto;
+}
