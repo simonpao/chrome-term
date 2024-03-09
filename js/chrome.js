@@ -173,7 +173,25 @@ class ChromeCommands {
 
         if(ChromeCommands.flags.close.includes(action)) {}
         if(ChromeCommands.flags.new.includes(action)) {}
-        if(ChromeCommands.flags.list.includes(action)) {}
+
+        if(ChromeCommands.flags.list.includes(action)) {
+            if(!name) {
+                try {
+                    let allTabs = await this.#getAllTabs() ;
+                    for(let t in allTabs) {
+                        result += `[${t}] ${allTabs[t].id} ` ;
+                        result += `: ${allTabs[t].title}\n` ;
+                    }
+                } catch (e) {
+                    return await cmdErr( this.terminal, "Failed to get current tab: " + e, 1 ) ;
+                }
+            } else {
+                // TODO: Filter tabs returned by name
+            }
+            this.terminal.terminal.status = 0 ;
+            await this.terminal.println( result ) ;
+            return result ;
+        }
 
         if(ChromeCommands.flags.info.includes(action)) {
             if(!name) {
@@ -255,6 +273,18 @@ class ChromeCommands {
                     resolve(newFolder) ;
                 },
             );
+        }) ;
+    }
+
+    async #getAllTabs() {
+        return new Promise((resolve, reject) => {
+            chrome.tabs.query({}, tabs => {
+                if (tabs.length) {
+                    resolve(tabs) ;
+                } else {
+                    reject("Unable to get tabs") ;
+                }
+            });
         }) ;
     }
 

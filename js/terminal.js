@@ -88,7 +88,6 @@ class ChromeTerminal {
                 this.terminal.in = tmpDisplay.in ;
                 this.refresh() ;
                 this.setCharPos(this.terminal.x, this.terminal.y) ;
-                this.terminal.display.printPrompt = false ;
             }
         } catch(e) {}
     }
@@ -412,7 +411,6 @@ class ChromeTerminal {
         let command = ""
         while(command.toUpperCase() !== "EXIT") {
             this.terminal.in = { x: this.terminal.x, y: this.terminal.y } ;
-            this.saveDisplayInfo() ;
             command = await this.inputText() ;
             let output = await this.processCmd(command) ;
             if(this.returnStatus() !== 0)
