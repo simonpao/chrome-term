@@ -132,7 +132,7 @@ class ChromeCommands {
     async ls(args) {
         let dirs = this.#getDirContents(this.path.id);
         let flags = {} ;
-        if(args[1])
+        if(this.#isFlags(args[1]))
             flags = this.#parseFlags(args[1]) ;
 
         if(flags.A) {
@@ -158,15 +158,15 @@ class ChromeCommands {
             return out;
         } else {
             let out = "" ;
-            out += "T ID   PARENT    DATE   TIME   NAME\n" ;
+            out += "T ID    PARENT DATE        TIME   NAME" ;
             await this.terminal.println(out) ;
 
             for(let dir of dirs) {
                 let tmp = dir.type === "dir" ? "d" : "-" ;
-                tmp += " " + this.#padWithSpaces( dir.id.toString(), 4) ;
-                tmp += " " + this.#padWithSpaces( dir.parentId.toString(), 4) ;
+                tmp += " " + this.#padWithSpaces( dir.id.toString(), 5) ;
+                tmp += " " + this.#padWithSpaces( dir.parentId.toString(), 6) ;
                 tmp += " " + this.#padWithSpaces( this.#getFormattedDate(dir.dateAdded), 18) ;
-                tmp += " " + this.#padWithSpaces( dir.title, this.terminal.terminal.columns-33 ) ;
+                tmp += " " + this.#padWithSpaces( dir.title, this.terminal.terminal.columns-36 ) ;
 
                 out += tmp + "\n" ;
                 await this.terminal.println(tmp, 0, this.#getColor(dir.type)) ;
@@ -556,7 +556,7 @@ class ChromeCommands {
     #padWithZeros(str, totalLen) {
         if( str.length === totalLen ) return str ;
         if( str.length < totalLen ) {
-            str += this.#spaces(totalLen - str.length, "0") ;
+            str = this.#spaces(totalLen - str.length, "0") + str ;
         } else {
             str = str.slice(0, totalLen-1) + "-"
         }
@@ -570,6 +570,10 @@ class ChromeCommands {
             num-- ;
         }
         return spaces ;
+    }
+
+    #isFlags(str) {
+        return str?.startsWith("-") ;
     }
 
     #parseFlags(str) {
