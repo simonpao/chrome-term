@@ -80,11 +80,12 @@ class ChromeTerminal {
         try {
             let jsTerminalDisplayJson = localStorage.getItem(`${this.terminal.localStoragePrefix}--display`);
             let tmpDisplay = JSON.parse(jsTerminalDisplayJson) ;
-            if( tmpDisplay.display && tmpDisplay.x && tmpDisplay.y ) {
+            if( tmpDisplay.display && tmpDisplay.x && tmpDisplay.y && tmpDisplay.in ) {
                 this.clr() ;
                 this.terminal.display = tmpDisplay.display ;
                 this.terminal.x = tmpDisplay.x ;
                 this.terminal.y = tmpDisplay.y ;
+                this.terminal.in = tmpDisplay.in ;
                 this.refresh() ;
                 this.setCharPos(this.terminal.x, this.terminal.y) ;
             }
@@ -244,6 +245,7 @@ class ChromeTerminal {
             this.terminal.display.printPrompt = true ;
         }
 
+        this.saveDisplayInfo() ;
         $(`.char-row-${this.terminal.y} .char-box-${this.terminal.x}`).html(this.terminal.display.carrot) ;
 
         return new Promise((resolve) => {
@@ -259,6 +261,7 @@ class ChromeTerminal {
             if( $terminalInput.val() === "" ) {
                 this.logDebugInfo("e.which = " + e.which + "; e.keyCode = " + e.keyCode);
                 callback(e.keyCode, e.key, userIn, resolve, $terminalInput.is(":focus"), specialKey);
+                this.saveDisplayInfo() ;
             }
         }) ;
 
@@ -270,7 +273,9 @@ class ChromeTerminal {
                 callback(this.charToKeyCode(chars[i]), chars[i], userIn, resolve, false, specialKey);
             }
             $terminalInput.val("") ;
+            this.saveDisplayInfo() ;
         }) ;
+
     }
 
     removeListeners() {
@@ -353,9 +358,11 @@ class ChromeTerminal {
                     }
                 }
 
-                this.setCharPos(this.terminal.in.x, this.terminal.in.y) ;
-                await this.print(result) ;
-                this.insertCarrot(this.terminal.display.carrot);
+                if(result !== "") {
+                    this.setCharPos(this.terminal.in.x, this.terminal.in.y) ;
+                    await this.print(result) ;
+                    this.insertCarrot(this.terminal.display.carrot);
+                }
                 break ;
         }
     }
@@ -406,6 +413,7 @@ class ChromeTerminal {
         let command = ""
         while(command.toUpperCase() !== "EXIT") {
             this.terminal.in = { x: this.terminal.x, y: this.terminal.y } ;
+            this.saveDisplayInfo() ;
             command = await this.inputText() ;
             let output = await this.processCmd(command) ;
             if(this.returnStatus() !== 0)
@@ -425,7 +433,8 @@ class ChromeTerminal {
         let jsonString = JSON.stringify({
             display: this.terminal.display,
             x: this.terminal.x,
-            y: this.terminal.y
+            y: this.terminal.y,
+            in: this.terminal.in
         }) ;
         localStorage.setItem(`${this.terminal.localStoragePrefix}--display`, jsonString);
         this.terminal.display.printPrompt = true ;

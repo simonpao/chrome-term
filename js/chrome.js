@@ -23,6 +23,7 @@ class ChromeCommands {
             help: "./man/chrome.json"
         });
         terminal.registerCmd("SU", {
+            args: [ "username" ],
             callback: this.su.bind(this),
             help: "./man/chrome.json"
         });
@@ -44,6 +45,24 @@ class ChromeCommands {
         terminal.registerCmd("MV", {
             args: [ "source-bookmark", "destination-bookmark" ],
             callback: this.mv.bind(this),
+            help: "./man/chrome.json"
+        });
+        terminal.registerCmd("TAB", {
+            args: [ "action", "name" ],
+            callback: this.tab.bind(this),
+            ontab: this.tabTab.bind(this),
+            help: "./man/chrome.json"
+        });
+        terminal.registerCmd("TABGROUP", {
+            args: [ "action", "group" ],
+            callback: this.tabgroup.bind(this),
+            ontab: this.tabgroupTab.bind(this),
+            help: "./man/chrome.json"
+        });
+        terminal.registerCmd("BOOKMARK", {
+            args: [ "action", "group-name" ],
+            callback: this.bookmark.bind(this),
+            ontab: this.bookmarkTab.bind(this),
             help: "./man/chrome.json"
         });
     }
@@ -74,6 +93,8 @@ class ChromeCommands {
                 dir = this.#getItemByName(name, this.path.id )[0] ;
                 if(!dir)
                     return await cmdErr( this.terminal, `Directory ${name} not found.`, 1 ) ;
+                if(dir.type !== "dir")
+                    return await cmdErr( this.terminal, `${name} is not a directory.`, 1 ) ;
 
         }
 
@@ -83,6 +104,7 @@ class ChromeCommands {
         this.terminal.terminal.status = 0 ;
 
         this.#savePath() ;
+        return this.path.text ;
     }
 
     async cdTab(args) {
@@ -90,7 +112,7 @@ class ChromeCommands {
         let dir = this.#getItemByPartialName(name, this.path.id ) ;
         if(dir.length)
             return args[0] + " " + dir[0].title ;
-
+        return "" ;
     }
 
     async ls() {
@@ -120,6 +142,44 @@ class ChromeCommands {
     async cp(args) {}
 
     async mv(args) {}
+
+    async tab(args) {
+        let action = args[1]?.toUpperCase() ;
+        let name = args.splice(2, args.length-1).join(" ") ;
+        let result = "" ;
+
+        switch(action) {
+            case "OPEN":
+            case "O":
+                let bookmark = this.#getItemByName(name, this.path.id )[0] ;
+                if(!bookmark)
+                    return await cmdErr( this.terminal, `Bookmark "${name}" not found.`, 1 ) ;
+                if(bookmark.type !== "bookmark")
+                    return await cmdErr( this.terminal, `${name} is not a bookmark.`, 1 ) ;
+                result = bookmark.url ;
+                await this.#openNewTab(bookmark.url) ;
+                break ;
+        }
+
+        this.terminal.terminal.status = 0 ;
+        return result ;
+    }
+
+    async tabTab(args) {
+        return "" ;
+    }
+
+    async tabgroup(args) {}
+
+    async tabgroupTab(args) {
+        return "" ;
+    }
+
+    async bookmark(args) {}
+
+    async bookmarkTab(args) {
+        return "" ;
+    }
 
     async #createBookmark(title, url, folderId) {
         return new Promise((resolve, reject) => {
@@ -151,6 +211,37 @@ class ChromeCommands {
                     resolve(newFolder) ;
                 },
             );
+        }) ;
+    }
+
+    async #getCurrentTab() {
+        return new Promise((resolve, reject) => {
+            chrome.tabs.query({active: true, lastFocusedWindow: true}, tabs => {
+                if (tabs.length) {
+                    resolve(tabs[0]) ;
+                } else {
+                    reject("Unable to get current tab") ;
+                }
+            });
+        }) ;
+    }
+
+    async #openNewTab(url, group) {
+        return new Promise((resolve, reject) => {
+            chrome.tabs.create({
+                active: false,
+                url: url
+            }, async (tab) => {
+                if(typeof group === "string") {
+                    let tabGroup = await chrome.tabGroups.query( { title: group } ) ;
+                    if(!tabGroup.length) {
+                        const groupId = await chrome.tabs.group({ tabIds: tab.id });
+                        await chrome.tabGroups.update(groupId, { title: group });
+                    } else {
+                        await chrome.tabs.group({ groupId: tabGroup[0].id, tabIds: tab.id });
+                    }
+                }
+            }) ;
         }) ;
     }
 
@@ -225,8 +316,10 @@ class ChromeCommands {
     #restorePath() {
         let jsonString = localStorage.getItem(`${this.terminal.localStoragePrefix}--cliPath`);
         let tmpPath = JSON.parse(jsonString) ;
-        if( tmpPath )
+        if( tmpPath ) {
             this.path = tmpPath ;
+            this.terminal.terminal.display.path = this.path.text ;
+        }
     }
 
     #saveSettings() {
