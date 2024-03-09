@@ -59,6 +59,10 @@ function registerDefaultCommands(terminal) {
         callback: exponentCmd.bind(terminal),
         help: "./man/commands.json"
     }) ;
+    terminal.registerCmd( "GOTO", {
+        args: [ "line-number" ],
+        callback: gotoCmd.bind(terminal)
+    }) ;
     terminal.registerCmd( "GT", {
         args: [ "operand", "operand" ],
         callback: greaterThanCmd.bind(terminal),
@@ -99,15 +103,19 @@ function registerDefaultCommands(terminal) {
         callback: multiplyCmd.bind(terminal),
         help: "./man/commands.json"
     }) ;
+    terminal.registerCmd( "NEW", {
+        callback: newCmd.bind(terminal),
+        help: "./man/commands.json"
+    }) ;
     terminal.registerCmd( "PRINT", {
         args: [ "text" ],
         callback: printCmd.bind(terminal),
         help: "./man/commands.json"
     }) ;
-    terminal.registerCmd( "RESET", {
+    /*terminal.registerCmd( "RESET", {
         callback: resetCmd.bind(terminal),
         help: "./man/commands.json"
-    }) ;
+    }) ;*/
     terminal.registerCmd( "RND", {
         args: [ "max" ],
         callback: rndCmd.bind(terminal),
@@ -120,6 +128,11 @@ function registerDefaultCommands(terminal) {
     terminal.registerCmd( "SETCURSOR", {
         args: [ "x", "y" ],
         callback: setCursorCmd.bind(terminal),
+        help: "./man/commands.json"
+    }) ;
+    terminal.registerCmd( "SAVE", {
+        args: [ "name", "base" ],
+        callback: saveCmd.bind(terminal),
         help: "./man/commands.json"
     }) ;
     terminal.registerCmd( "SQRT", {
@@ -186,8 +199,8 @@ async function ifCmd(args) {
     let thenPos = 0, elsePos = 0, trueOrFalse = false, out = "" ;
 
     for( let i in args ) {
-        if(args[i] === "THEN") thenPos = parseInt(i) ;
-        if(args[i] === "ELSE") elsePos = parseInt(i) ;
+        if(args[i]?.toUpperCase() === "THEN") thenPos = parseInt(i) ;
+        if(args[i]?.toUpperCase() === "ELSE") elsePos = parseInt(i) ;
     }
 
     if(thenPos === 0)
@@ -467,9 +480,17 @@ async function listCmd(args) {
 }
 
 async function runCmd(args) {
-    for( let line in this.terminal.program.input) {
-        if( this.terminal.program.input[line] ) {
-            await this.processCmd(this.terminal.program.input[line]) ;
+    let stackLimit = 100 ;
+    for( let line = 0; line < this.terminal.program.input.length; line++ ) {
+        if(this.terminal.program.input.hasOwnProperty(line) &&
+           this.terminal.program.input[line] ) {
+            let control = await this.processCmd(this.terminal.program.input[line]) ;
+            if(control?.startsWith("GOTO:")) {
+                line = parseInt( control.split(":")[1] )-1 ;
+                stackLimit-- ;
+                if(!stackLimit)
+                    return await cmdErr( this, "Stack limit exceeded.", this.returnStatus());
+            }
             if(this.returnStatus() !== 0) {
                 return await cmdErr( this, "Execution error.", this.returnStatus());
             }
@@ -477,6 +498,32 @@ async function runCmd(args) {
     }
     this.terminal.status = 0 ;
     return "" ;
+}
+
+async function saveCmd(args) {
+
+}
+
+async function newCmd(args) {
+    localStorage.removeItem(`${this.terminal.localStoragePrefix}--programInput`);
+    this.terminal.program.input = [] ;
+    await this.println("Stored program cleared.")
+    this.terminal.status = 0 ;
+    return "" ;
+}
+
+async function gotoCmd(args) {
+    try {
+        args = await replaceVarsInArgs(this, args) ;
+    } catch(e) {
+        return await cmdErr( this,  e, 1 ) ;
+    }
+
+    if(!this.terminal.program.input.hasOwnProperty(parseInt(args[1])) ||
+       !this.terminal.program.input[parseInt(args[1])])
+        return await cmdErr( this,  `Invalid program line ${args[1]} specified.`, 1 ) ;
+
+    return `GOTO:${args[1]}` ;
 }
 
 async function setCursorCmd(args) {
@@ -562,7 +609,7 @@ async function systemCmd(args) {
     if( typeof args[1] === "undefined") args[1] = "LIST" ;
 
     let out = "" ;
-    switch(args[1]) {
+    switch(args[1]?.toUpperCase()) {
         case "LIST":
             out = "ROWS, COLS, X, Y, STATUS, DEBUG, PROMPT" ; break ;
         case "ROWS":

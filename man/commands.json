@@ -23,6 +23,7 @@
   "RESET": "Reset the terminal",
   "RND": "Generate a random number",
   "RUN": "Run the stored program",
+  "SAVE": "Save the current stored program as an alias",
   "SETCURSOR": "Set the cursor position",
   "SQRT": "Find a square root",
   "SUBTRACT": "Subtract two numbers",

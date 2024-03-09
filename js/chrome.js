@@ -5,13 +5,12 @@ class ChromeCommands {
         new:   ["--NEW",   "NEW",   "-N", "N"],
         list:  ["--LIST",  "LIST",  "-L", "L", "LS"],
         info:  ["--INFO",  "INFO",  "-I", "I"],
-        modifiers: ["A", "L"]
+        modifiers: ["A", "F", "L"]
     }
 
     path = { text:"/", id: "0", parentId: null } ;
     settings = {
-        account: "Chrome",
-        aliases: []
+        account: "Chrome"
     }
 
     constructor(terminal, bookmarks) {

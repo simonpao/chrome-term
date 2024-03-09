@@ -376,6 +376,7 @@ class ChromeTerminal {
      */
     async processCmd(command) {
         if( command === "" ) return "" ;
+        this.terminal.status = 0 ;
 
         this.logDebugInfo("Incoming command: " + command) ;
 
