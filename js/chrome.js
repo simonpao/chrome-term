@@ -130,11 +130,7 @@ class ChromeCommands {
 
     async ls(args) {
         let dirs = this.#getDirContents(this.path.id) ;
-        let out = "" ;
-        for(let dir of dirs) {
-            await this.terminal.println(dir.title, 0, this.#getColor(dir.type));
-            out += dir.title + "\n" ;
-        }
+        let out = this.#printList(dirs, "title", false) ;
         this.terminal.terminal.status = 0 ;
         return out ;
     }
@@ -261,12 +257,13 @@ class ChromeCommands {
         return "" ;
     }
 
-    async #printList(collection, attribute = "title") {
-        await this.terminal.print("\n") ;
+    async #printList(collection, attribute = "title", printPrompt = true) {
+        if(printPrompt) await this.terminal.print("\n") ;
 
         let columns = this.terminal.terminal.columns ;
         let titles = [] ;
         let max = 0 ;
+        let out = "" ;
 
         for(let c of collection) {
             titles.push({text: c[attribute], len: c[attribute].length, type: c.type});
@@ -275,25 +272,36 @@ class ChromeCommands {
         }
 
         if(max < columns/4) {
-            for(let t of titles)
-                await this.terminal.print(t.text + this.#spaces((columns/4) - t.len), 0, this.#getColor(t.type)) ;
+            for(let t of titles) {
+                out += t.text + this.#spaces((columns / 4) - t.len) ;
+                await this.terminal.print(t.text + this.#spaces((columns / 4) - t.len), 0, this.#getColor(t.type));
+            }
         }
         else if(max < columns/3) {
-            for(let t of titles)
-                await this.terminal.print(t.text + this.#spaces((columns/3) - t.len), 0, this.#getColor(t.type)) ;
+            for(let t of titles) {
+                out += t.text + this.#spaces((columns / 3) - t.len) ;
+                await this.terminal.print(t.text + this.#spaces((columns / 3) - t.len), 0, this.#getColor(t.type));
+            }
         }
         else if(max < columns/2) {
-            for(let t of titles)
-                await this.terminal.print(t.text + this.#spaces((columns/2) - t.len), 0, this.#getColor(t.type)) ;
+            for(let t of titles) {
+                out += t.text + this.#spaces((columns / 2) - t.len) ;
+                await this.terminal.print(t.text + this.#spaces((columns / 2) - t.len), 0, this.#getColor(t.type));
+            }
         }
         else {
-            for(let t of titles)
-                await this.terminal.println(t.text, 0, this.#getColor(t.type)) ;
+            for(let t of titles) {
+                out += t.text + "\n"
+                await this.terminal.println(t.text, 0, this.#getColor(t.type));
+            }
         }
 
-        await this.terminal.print("\n") ;
-        await this.terminal.printPrompt(this.terminal.terminal.display.prompt) ;
-        this.terminal.insertCarrot(this.terminal.terminal.display.carrot);
+        await this.terminal.print("\n");
+        if(printPrompt) {
+            await this.terminal.printPrompt(this.terminal.terminal.display.prompt);
+            this.terminal.insertCarrot(this.terminal.terminal.display.carrot);
+        }
+        return "" ;
     }
 
     async #createBookmark(title, url, folderId) {
