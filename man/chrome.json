@@ -5,5 +5,8 @@
   "MKDIR": "Create a new folder",
   "RMDIR": "Delete a specified folder",
   "CP": "Copy a bookmark",
-  "MV": "Move a bookmark"
+  "MV": "Move a bookmark",
+  "TAB": "Manage Chrome tabs\nFor example:\n    - tab --open Bookmark name\n    - tab --list\n    - tab --info",
+  "TABGROUP": "Manage tab groups",
+  "BOOKMARK": "Manage bookmarks"
 }

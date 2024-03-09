@@ -56,7 +56,7 @@ class ChromeCommands {
             help: "./man/chrome.json"
         });
         terminal.registerCmd("TAB", {
-            args: [ "action", "name" ],
+            args: [ "action", "name (optional)" ],
             callback: this.tab.bind(this),
             ontab: this.tabTab.bind(this),
             help: "./man/chrome.json"
