@@ -118,8 +118,13 @@ class ChromeCommands {
     async cdTab(args) {
         let name = args.splice(1, args.length-1).join(" ") ;
         let dir = this.#getItemByPartialName(name, this.path.id ) ;
-        if(dir.length)
+        if(dir.length === 1)
             return args[0] + " " + dir[0].title ;
+        if(dir.length > 1) {
+            await this.#printList(dir) ;
+            return args[0] + " " + name ;
+        }
+
         return "" ;
     }
 
@@ -233,8 +238,12 @@ class ChromeCommands {
 
         if(ChromeCommands.flags.open.includes(action)) {
             let bookmark = this.#getItemByPartialName(name, this.path.id ) ;
-            if(bookmark.length && bookmark[0].type === "bookmark")
+            if(bookmark.length === 1 && bookmark[0].type === "bookmark")
                 return args[0] + " " + args[1] + " " + bookmark[0].title ;
+            if(bookmark.length > 1) {
+                await this.#printList(bookmark) ;
+                return args[0] + " " + args[1] + " " + name ;
+            }
         }
 
         return "" ;
@@ -250,6 +259,15 @@ class ChromeCommands {
 
     async bookmarkTab(args) {
         return "" ;
+    }
+
+    async #printList(collection, attribute = "title") {
+        await this.terminal.print("\n") ;
+        for(let c of collection)
+            await this.terminal.print(c[attribute] + "    ") ;
+        await this.terminal.print("\n") ;
+        await this.terminal.printPrompt(this.terminal.terminal.display.prompt) ;
+        this.terminal.insertCarrot(this.terminal.terminal.display.carrot);
     }
 
     async #createBookmark(title, url, folderId) {

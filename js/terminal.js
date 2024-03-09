@@ -233,14 +233,8 @@ class ChromeTerminal {
     }
 
     async inputText(prompt) {
-        prompt = prompt ? prompt : this.terminal.display.prompt ;
-
         if(this.terminal.display.printPrompt) {
-            await this.print(`${this.terminal.display.account}`, 0, "green");
-            await this.print(":", 0, "white");
-            await this.print(`~${this.terminal.display.path}`, 0, "blue");
-            await this.print(prompt);
-            this.terminal.in = { x: this.terminal.x, y: this.terminal.y } ;
+            await this.printPrompt(prompt) ;
         } else {
             this.terminal.display.printPrompt = true ;
         }
@@ -252,6 +246,15 @@ class ChromeTerminal {
             let userIn = [] ;
             this.initListeners(this.parseInput.bind(this), userIn, resolve, this.specialKey.bind(this)) ;
         });
+    }
+
+    async printPrompt(prompt) {
+        prompt = prompt ? prompt : this.terminal.display.prompt ;
+        await this.print(`${this.terminal.display.account}`, 0, "green");
+        await this.print(":", 0, "white");
+        await this.print(`~${this.terminal.display.path}`, 0, "blue");
+        await this.print(prompt);
+        this.terminal.in = { x: this.terminal.x, y: this.terminal.y } ;
     }
 
     initListeners(callback, userIn, resolve, specialKey) {
