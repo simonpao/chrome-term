@@ -6,7 +6,9 @@ const VAR_MODE_VAR    = 3 ;
 function registerDefaultCommands(terminal) {
     terminal.registerCmd( "ADD",       { args: [ "addend", "addend" ], callback: addCmd.bind(terminal) }) ;
     terminal.registerCmd( "ASSIGN",    { args: [ "variableValue", "TO", "variableName" ], callback: assignmentCmd.bind(terminal) }) ;
+    terminal.registerCmd( "CLEAR",     { callback: clrCmd.bind(terminal) }) ;
     terminal.registerCmd( "CLR",       { callback: clrCmd.bind(terminal) }) ;
+    terminal.registerCmd( "CLS",       { callback: clrCmd.bind(terminal) }) ;
     terminal.registerCmd( "COLOR",     { args: [ "color" ], callback: colorCmd.bind(terminal) }) ;
     terminal.registerCmd( "DELETE",    { args: [ "line" ], callback: deleteCmd.bind(terminal) }) ;
     terminal.registerCmd( "DIVIDE",    { args: [ "dividend", "divisor" ], callback: divideCmd.bind(terminal) }) ;

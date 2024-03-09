@@ -11,7 +11,10 @@ class ChromeTerminal {
             prompt: "$\u0000",
             carrot: "█",
             color: "white",
+            path: "/",
+            account: "Chrome",
             data: [],
+            printPrompt: true
         },
         program: {
             input: [],
@@ -31,7 +34,8 @@ class ChromeTerminal {
         try {
             let jsTerminalProgramInputJson = localStorage.getItem(`${this.terminal.localStoragePrefix}--programInput`);
             let tmpProgramInput = JSON.parse(jsTerminalProgramInputJson) ;
-            if( tmpProgramInput !== null) this.terminal.program.input = tmpProgramInput ;
+            if( tmpProgramInput !== null)
+                this.terminal.program.input = tmpProgramInput ;
         } catch(e) {}
 
         this.terminal.columns = columns ;
@@ -71,6 +75,19 @@ class ChromeTerminal {
                 $charRow.append(`<div class="char-box char-box-${x}"></div>`) ;
             }
         }
+
+        try {
+            let jsTerminalDisplayJson = localStorage.getItem(`${this.terminal.localStoragePrefix}--display`);
+            let tmpDisplay = JSON.parse(jsTerminalDisplayJson) ;
+            if( tmpDisplay.display && tmpDisplay.x && tmpDisplay.y ) {
+                this.clr() ;
+                this.terminal.display = tmpDisplay.display ;
+                this.terminal.x = tmpDisplay.x ;
+                this.terminal.y = tmpDisplay.y ;
+                this.refresh() ;
+                this.setCharPos(this.terminal.x, this.terminal.y) ;
+            }
+        } catch(e) {}
     }
 
     insertNewLine() {
@@ -129,7 +146,7 @@ class ChromeTerminal {
             for(let x = 0 ; x < this.terminal.columns ; x++) {
                 if( this.terminal.display.data[y] && this.terminal.display.data[y][x] )
                     $charRow.find(`.char-box-${x}`).html(
-                        $(`<span style='color: ${this.terminal.display.data[y][x].color};'>${this.terminal.display.data[y][x].char}</span>`)
+                        $(`<span style='color: var(${'--'+this.terminal.display.data[y][x].color});'>${this.terminal.display.data[y][x].char}</span>`)
                     ) ;
                 else
                     $charRow.find(`.char-box-${x}`).html("") ;
@@ -188,11 +205,13 @@ class ChromeTerminal {
                         char: chars[c],
                         color: color
                     } ;
-                    $charBox.html($(`<span style='color: var(--${color});'></span>`).text(chars[c])) ;
+                    $charBox.html($(`<span style='color: var(${'--'+color});'></span>`).text(chars[c])) ;
                     await this.incrementCharPos(timeout) ;
                     break ;
             }
         }
+
+        this.saveDisplayInfo() ;
     }
 
     async println(data, timeout) {
@@ -213,7 +232,14 @@ class ChromeTerminal {
     async inputText(prompt) {
         prompt = prompt ? prompt : this.terminal.display.prompt ;
 
-        await this.print(prompt) ;
+        if(this.terminal.display.printPrompt) {
+            await this.print(`${this.terminal.display.account}`, 0, "green");
+            await this.print(":", 0, "white");
+            await this.print(`~${this.terminal.display.path}`, 0, "blue");
+            await this.print(prompt);
+        } else {
+            this.terminal.display.printPrompt = true ;
+        }
 
         $(`.char-row-${this.terminal.y} .char-box-${this.terminal.x}`).html(this.terminal.display.carrot) ;
 
@@ -354,6 +380,17 @@ class ChromeTerminal {
     async setLocalStorage() {
         let jsonString = JSON.stringify(this.terminal.program.input) ;
         localStorage.setItem(`${this.terminal.localStoragePrefix}--programInput`, jsonString);
+    }
+
+    saveDisplayInfo() {
+        this.terminal.display.printPrompt = false ;
+        let jsonString = JSON.stringify({
+            display: this.terminal.display,
+            x: this.terminal.x,
+            y: this.terminal.y
+        }) ;
+        localStorage.setItem(`${this.terminal.localStoragePrefix}--display`, jsonString);
+        this.terminal.display.printPrompt = true ;
     }
 
     async sleep(timeout) {
