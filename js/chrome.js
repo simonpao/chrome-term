@@ -128,11 +128,11 @@ class ChromeCommands {
         return "" ;
     }
 
-    async ls() {
+    async ls(args) {
         let dirs = this.#getDirContents(this.path.id) ;
         let out = "" ;
         for(let dir of dirs) {
-            await this.terminal.println(dir.title, 0, dir.type === "dir" ? "blue" : "white");
+            await this.terminal.println(dir.title, 0, this.#getColor(dir.type));
             out += dir.title + "\n" ;
         }
         this.terminal.terminal.status = 0 ;
@@ -263,8 +263,34 @@ class ChromeCommands {
 
     async #printList(collection, attribute = "title") {
         await this.terminal.print("\n") ;
-        for(let c of collection)
-            await this.terminal.print(c[attribute] + "    ") ;
+
+        let columns = this.terminal.terminal.columns ;
+        let titles = [] ;
+        let max = 0 ;
+
+        for(let c of collection) {
+            titles.push({text: c[attribute], len: c[attribute].length, type: c.type});
+            if(c[attribute].length > max)
+                max = c[attribute].length ;
+        }
+
+        if(max < columns/4) {
+            for(let t of titles)
+                await this.terminal.print(t.text + this.#spaces((columns/4) - t.len), 0, this.#getColor(t.type)) ;
+        }
+        else if(max < columns/3) {
+            for(let t of titles)
+                await this.terminal.print(t.text + this.#spaces((columns/3) - t.len), 0, this.#getColor(t.type)) ;
+        }
+        else if(max < columns/2) {
+            for(let t of titles)
+                await this.terminal.print(t.text + this.#spaces((columns/2) - t.len), 0, this.#getColor(t.type)) ;
+        }
+        else {
+            for(let t of titles)
+                await this.terminal.println(t.text, 0, this.#getColor(t.type)) ;
+        }
+
         await this.terminal.print("\n") ;
         await this.terminal.printPrompt(this.terminal.terminal.display.prompt) ;
         this.terminal.insertCarrot(this.terminal.terminal.display.carrot);
@@ -451,5 +477,24 @@ class ChromeCommands {
             this.settings = tmpSettings;
             this.terminal.terminal.display.account = this.settings.account ;
         }
+    }
+
+    #getColor(type) {
+        switch(type) {
+            case "dir":
+                return "blue" ;
+            case "bookmark":
+            default:
+                return "white" ;
+        }
+    }
+
+    #spaces(num) {
+        let spaces = "" ;
+        while(num) {
+            spaces += " " ;
+            num-- ;
+        }
+        return spaces ;
     }
 }
