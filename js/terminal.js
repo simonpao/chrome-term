@@ -2,6 +2,7 @@ class ChromeTerminal {
     terminal = {
         x: 0,
         y: 0,
+        in: { x: 0, y: 0 },
         status: 0, // Response code set by returning program
         debugMode: false,
         defaultTimeout: 0,
@@ -103,17 +104,18 @@ class ChromeTerminal {
         let y = this.terminal.y ;
 
         if(x === 0) {
-            if(y === 0) return ;
+            if(y === 0) return false ;
             y-- ;
             x = this.terminal.columns ;
         }
         x-- ;
 
         if(this.terminal.display.data[y][x].char === "\u0000")
-            return ;
+            return false ;
 
         this.terminal.x = x ;
         this.terminal.y = y ;
+        return true ;
     }
 
     scrollTerminalContents() {
@@ -237,6 +239,7 @@ class ChromeTerminal {
             await this.print(":", 0, "white");
             await this.print(`~${this.terminal.display.path}`, 0, "blue");
             await this.print(prompt);
+            this.terminal.in = { x: this.terminal.x, y: this.terminal.y } ;
         } else {
             this.terminal.display.printPrompt = true ;
         }
@@ -245,17 +248,17 @@ class ChromeTerminal {
 
         return new Promise((resolve) => {
             let userIn = [] ;
-            this.initListeners(this.parseInput.bind(this), userIn, resolve) ;
+            this.initListeners(this.parseInput.bind(this), userIn, resolve, this.specialKey.bind(this)) ;
         });
     }
 
-    initListeners(callback, userIn, resolve) {
+    initListeners(callback, userIn, resolve, specialKey) {
         let $terminalInput = $("#terminal-input") ;
 
         $("#terminal-container").on("keydown", e => {
             if( $terminalInput.val() === "" ) {
                 this.logDebugInfo("e.which = " + e.which + "; e.keyCode = " + e.keyCode);
-                callback(e.keyCode, e.key, userIn, resolve, $terminalInput.is(":focus"));
+                callback(e.keyCode, e.key, userIn, resolve, $terminalInput.is(":focus"), specialKey);
             }
         }) ;
 
@@ -264,7 +267,7 @@ class ChromeTerminal {
             let chars = $terminalInput.val().split("") ;
             this.logDebugInfo("charToKeyCode(chars[i]) = " + this.charToKeyCode(chars[0]) + "; chars[0] = " + chars[0]) ;
             for(let i in chars) {
-                callback(this.charToKeyCode(chars[i]), chars[i], userIn, resolve);
+                callback(this.charToKeyCode(chars[i]), chars[i], userIn, resolve, false, specialKey);
             }
             $terminalInput.val("") ;
         }) ;
@@ -292,7 +295,7 @@ class ChromeTerminal {
         return keyVals[char] ;
     }
 
-    async parseInput(keyCode, char, userIn, resolve, limit) {
+    async parseInput(keyCode, char, userIn, resolve, limit, specialKey) {
         switch(keyCode) {
             case 13:
                 this.removeListeners() ;
@@ -306,6 +309,10 @@ class ChromeTerminal {
                 this.insertCarrot(this.terminal.display.carrot);
                 userIn.pop() ;
                 break ;
+            case 9:
+                if(typeof specialKey === "function")
+                    await specialKey(userIn.join(""), userIn, keyCode) ;
+                break ;
             default:
                 if( limit ) break ;
                 if ((keyCode > 47  && keyCode < 58)    || // number keys
@@ -318,6 +325,37 @@ class ChromeTerminal {
                     await this.print(char, 0);
                     this.insertCarrot(this.terminal.display.carrot);
                 }
+                break ;
+        }
+    }
+
+    /**
+     * On special key, will attempt to evaluate the partial command and
+     *  perform some action on it
+     */
+    async specialKey(command, userIn, keyCode) {
+        let result = "" ;
+
+        switch(keyCode) {
+            case 9:
+                if( command === "" ) return "" ;
+
+                this.logDebugInfo("Incoming partial command: " + command) ;
+
+                let args = command.split(" ") ;
+
+                let cmd = args[0].toUpperCase() ;
+                if( typeof this.terminal.registeredCmd[cmd]?.ontab !== "undefined" ) {
+                    result = await this.terminal.registeredCmd[cmd].ontab(args, userIn, keyCode) ;
+                    if(typeof result === "string") {
+                        userIn.splice( 0, userIn.length ) ;
+                        userIn.push(...result.split("")) ;
+                    }
+                }
+
+                this.setCharPos(this.terminal.in.x, this.terminal.in.y) ;
+                await this.print(result) ;
+                this.insertCarrot(this.terminal.display.carrot);
                 break ;
         }
     }
@@ -367,6 +405,7 @@ class ChromeTerminal {
     async startInputLoop() {
         let command = ""
         while(command.toUpperCase() !== "EXIT") {
+            this.terminal.in = { x: this.terminal.x, y: this.terminal.y } ;
             command = await this.inputText() ;
             let output = await this.processCmd(command) ;
             if(this.returnStatus() !== 0)

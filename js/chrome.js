@@ -15,6 +15,7 @@ class ChromeCommands {
         terminal.registerCmd("CD", {
             args: [ "folder-name" ],
             callback: this.cd.bind(this),
+            ontab: this.cdTab.bind(this),
             help: "./man/chrome.json"
         });
         terminal.registerCmd("LS", {
@@ -82,6 +83,14 @@ class ChromeCommands {
         this.terminal.terminal.status = 0 ;
 
         this.#savePath() ;
+    }
+
+    async cdTab(args) {
+        let name = args.splice(1, args.length-1).join(" ") ;
+        let dir = this.#getItemByPartialName(name, this.path.id ) ;
+        if(dir.length)
+            return args[0] + " " + dir[0].title ;
+
     }
 
     async ls() {
@@ -157,6 +166,14 @@ class ChromeCommands {
         return this.bookmarks.filter(
             item =>
                 item.title?.toLowerCase() === name?.toLowerCase() &&
+                item.parentId === parentId
+        ) ;
+    }
+
+    #getItemByPartialName(part, parentId) {
+        return this.bookmarks.filter(
+            item =>
+                item.title?.toLowerCase()?.startsWith(part?.toLowerCase()) &&
                 item.parentId === parentId
         ) ;
     }
