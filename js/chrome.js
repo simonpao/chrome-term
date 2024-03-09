@@ -3,7 +3,8 @@ class ChromeCommands {
         open:  ["--OPEN",  "OPEN",  "-O", "O"],
         close: ["--CLOSE", "CLOSE", "-C", "C"],
         new:   ["--NEW",   "NEW",   "-N", "N"],
-        list:  ["--LIST",  "LIST",  "-L", "L", "LS"]
+        list:  ["--LIST",  "LIST",  "-L", "L", "LS"],
+        info:  ["--INFO",  "INFO",  "-I", "I"]
     }
 
     path = { text:"/", id: "0", parentId: null } ;
@@ -156,6 +157,8 @@ class ChromeCommands {
         let result = "" ;
 
         if(ChromeCommands.flags.open.includes(action)) {
+            if(!name)
+                return await cmdErr( this.terminal, `No bookmark specified.`, 1 ) ;
             let bookmark = this.#getItemByName(name, this.path.id )[0] ;
             if(!bookmark)
                 return await cmdErr( this.terminal, `Bookmark "${name}" not found.`, 1 ) ;
@@ -165,6 +168,30 @@ class ChromeCommands {
             await this.#openNewTab(bookmark.url) ;
             this.terminal.terminal.status = 0 ;
             await this.terminal.println( `Bookmark opened in new tab.` ) ;
+            return result ;
+        }
+
+        if(ChromeCommands.flags.close.includes(action)) {}
+        if(ChromeCommands.flags.new.includes(action)) {}
+        if(ChromeCommands.flags.list.includes(action)) {}
+
+        if(ChromeCommands.flags.info.includes(action)) {
+            if(!name) {
+                try {
+                    let currentTab = await this.#getCurrentTab() ;
+                    result += `id: ${currentTab.id}\n` ;
+                    result += `groupId: ${currentTab.groupId === -1 ? "none" : currentTab.groupId}\n` ;
+                    result += `windowId: ${currentTab.windowId}\n` ;
+                    result += `title: ${currentTab.title}\n` ;
+                    result += `url: ${currentTab.url}` ;
+                } catch (e) {
+                    return await cmdErr( this.terminal, "Failed to get current tab: " + e, 1 ) ;
+                }
+            } else {
+                // TODO: Get open tab by name
+            }
+            this.terminal.terminal.status = 0 ;
+            await this.terminal.println( result ) ;
             return result ;
         }
 
