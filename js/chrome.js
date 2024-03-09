@@ -1,7 +1,8 @@
 class ChromeCommands {
     path = { text:"/", id: "0", parentId: null } ;
     settings = {
-        account: "Chrome"
+        account: "Chrome",
+        aliases: []
     }
 
     constructor(terminal, bookmarks) {
@@ -9,6 +10,7 @@ class ChromeCommands {
         this.terminal = terminal ;
 
         this.#restorePath() ;
+        this.#restoreSettings() ;
 
         terminal.registerCmd("CD", {
             args: [ "folder-name" ],
@@ -55,6 +57,11 @@ class ChromeCommands {
         switch(name) {
             case ".":
                 return ;
+            case "~":
+                dir = this.#getItemById( "0" )[0] ;
+                if(!dir)
+                    return await cmdErr( this.terminal, `Directory ${name} not found.`, 1 ) ;
+                break ;
             case "..":
                 if(!this.path.parentId)
                     return await cmdErr( this.terminal, "Cannot move out of root directory.", 1 ) ;
@@ -198,15 +205,24 @@ class ChromeCommands {
         localStorage.setItem(`${this.terminal.localStoragePrefix}--cliPath`, JSON.stringify(this.path));
     }
 
-    #saveSettings() {
-        this.terminal.terminal.display.account = this.settings.account ;
-        localStorage.setItem(`${this.terminal.localStoragePrefix}--cliSettings`, JSON.stringify(this.settings));
-    }
-
     #restorePath() {
         let jsonString = localStorage.getItem(`${this.terminal.localStoragePrefix}--cliPath`);
         let tmpPath = JSON.parse(jsonString) ;
         if( tmpPath )
             this.path = tmpPath ;
+    }
+
+    #saveSettings() {
+        this.terminal.terminal.display.account = this.settings.account ;
+        localStorage.setItem(`${this.terminal.localStoragePrefix}--cliSettings`, JSON.stringify(this.settings));
+    }
+
+    #restoreSettings() {
+        let jsonString = localStorage.getItem(`${this.terminal.localStoragePrefix}--cliSettings`);
+        let tmpSettings = JSON.parse(jsonString) ;
+        if( tmpSettings ) {
+            this.settings = tmpSettings;
+            this.terminal.terminal.display.account = this.settings.account ;
+        }
     }
 }
