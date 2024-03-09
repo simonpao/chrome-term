@@ -4,7 +4,8 @@ class ChromeCommands {
         close: ["--CLOSE", "CLOSE", "-C", "C"],
         new:   ["--NEW",   "NEW",   "-N", "N"],
         list:  ["--LIST",  "LIST",  "-L", "L", "LS"],
-        info:  ["--INFO",  "INFO",  "-I", "I"]
+        info:  ["--INFO",  "INFO",  "-I", "I"],
+        modifiers: ["A", "L"]
     }
 
     path = { text:"/", id: "0", parentId: null } ;
@@ -129,10 +130,51 @@ class ChromeCommands {
     }
 
     async ls(args) {
-        let dirs = this.#getDirContents(this.path.id) ;
-        let out = this.#printList(dirs, "title", false) ;
-        this.terminal.terminal.status = 0 ;
-        return out ;
+        let dirs = this.#getDirContents(this.path.id);
+        let flags = {} ;
+        if(args[1])
+            flags = this.#parseFlags(args[1]) ;
+
+        if(flags.A) {
+            dirs.splice( 0, 0, {
+                "title": "..",
+                "id": "",
+                "parentId": "",
+                "dateAdded": 0,
+                "type": "dir"
+            }) ;
+            dirs.splice( 0, 0, {
+                "title": ".",
+                "id": "",
+                "parentId": "",
+                "dateAdded": 0,
+                "type": "dir"
+            }) ;
+        }
+
+        if(!flags.L) {
+            let out = this.#printList(dirs, "title", false);
+            this.terminal.terminal.status = 0;
+            return out;
+        } else {
+            let out = "" ;
+            out += "T ID   PARENT    DATE   TIME   NAME\n" ;
+            await this.terminal.println(out) ;
+
+            for(let dir of dirs) {
+                let tmp = dir.type === "dir" ? "d" : "-" ;
+                tmp += " " + this.#padWithSpaces( dir.id.toString(), 4) ;
+                tmp += " " + this.#padWithSpaces( dir.parentId.toString(), 4) ;
+                tmp += " " + this.#padWithSpaces( this.#getFormattedDate(dir.dateAdded), 18) ;
+                tmp += " " + this.#padWithSpaces( dir.title, this.terminal.terminal.columns-33 ) ;
+
+                out += tmp + "\n" ;
+                await this.terminal.println(tmp, 0, this.#getColor(dir.type)) ;
+            }
+
+            this.terminal.terminal.status = 0;
+            return out;
+        }
     }
 
     async su(args) {
@@ -292,7 +334,11 @@ class ChromeCommands {
         else {
             for(let t of titles) {
                 out += t.text + "\n"
-                await this.terminal.println(t.text, 0, this.#getColor(t.type));
+                await this.terminal.println(
+                    this.#padWithSpaces( t.text, this.terminal.terminal.columns-1 ),
+                    0,
+                    this.#getColor(t.type)
+                );
             }
         }
 
@@ -497,12 +543,60 @@ class ChromeCommands {
         }
     }
 
-    #spaces(num) {
+    #padWithSpaces(str, totalLen) {
+        if( str.length === totalLen ) return str ;
+        if( str.length < totalLen ) {
+            str += this.#spaces(totalLen - str.length) ;
+        } else {
+            str = str.slice(0, totalLen-3) + "..."
+        }
+        return str ;
+    }
+
+    #padWithZeros(str, totalLen) {
+        if( str.length === totalLen ) return str ;
+        if( str.length < totalLen ) {
+            str += this.#spaces(totalLen - str.length, "0") ;
+        } else {
+            str = str.slice(0, totalLen-1) + "-"
+        }
+        return str ;
+    }
+
+    #spaces(num, char = " ") {
         let spaces = "" ;
         while(num) {
-            spaces += " " ;
+            spaces += char ;
             num-- ;
         }
         return spaces ;
+    }
+
+    #parseFlags(str) {
+        // Initialize object with all possible modifiers
+        let opts = {} ;
+        for(let letter of ChromeCommands.flags.modifiers)
+            opts[letter] = false ;
+
+        // Set opts to true if they exist in string
+        let flags = str.split("") ;
+        for(let flag of flags) {
+            flag = flag.toUpperCase() ;
+            if(opts.hasOwnProperty(flag))
+                opts[flag] = true ;
+        }
+
+        return opts ;
+    }
+
+    #getFormattedDate(timestamp) {
+        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" ];
+        let date = new Date(timestamp) ;
+        let str = date.getFullYear() + " " ;
+        str += monthNames[date.getMonth()] + " " ;
+        str += this.#padWithZeros((date.getDate()).toString(), 2) + " " ;
+        str += this.#padWithZeros((date.getHours()).toString(), 2) + ":" ;
+        str += this.#padWithZeros((date.getMinutes()).toString(), 2) + " " ;
+        return str ;
     }
 }
