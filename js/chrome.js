@@ -187,7 +187,7 @@ class ChromeCommands {
                     ) ;
                 }
             } catch (e) {
-                return await cmdErr( this.terminal, "Failed to get current tab: " + e, 1 ) ;
+                return await cmdErr( this.terminal, e, 1 ) ;
             }
 
             for(let t in allTabs) {
@@ -201,20 +201,22 @@ class ChromeCommands {
         }
 
         if(ChromeCommands.flags.info.includes(action)) {
-            if(!name) {
-                try {
-                    let currentTab = await this.#getCurrentTab() ;
-                    result += `id: ${currentTab.id}\n` ;
-                    result += `groupId: ${currentTab.groupId === -1 ? "none" : currentTab.groupId}\n` ;
-                    result += `windowId: ${currentTab.windowId}\n` ;
-                    result += `title: ${currentTab.title}\n` ;
-                    result += `url: ${currentTab.url}` ;
-                } catch (e) {
-                    return await cmdErr( this.terminal, "Failed to get current tab: " + e, 1 ) ;
+            let tab ;
+            try {
+                if(!name) {
+                    tab = await this.#getCurrentTab() ;
+                } else {
+                    tab = await this.#getTabById(parseInt(name)) ;
                 }
-            } else {
-                // TODO: Get open tab by name
+            } catch (e) {
+                return await cmdErr( this.terminal, e, 1 ) ;
             }
+
+            result += `id: ${tab.id}\n` ;
+            result += `groupId: ${tab.groupId === -1 ? "none" : tab.groupId}\n` ;
+            result += `windowId: ${tab.windowId}\n` ;
+            result += `title: ${tab.title}\n` ;
+            result += `url: ${tab.url}` ;
             this.terminal.terminal.status = 0 ;
             await this.terminal.println( result ) ;
             return result ;
@@ -305,6 +307,18 @@ class ChromeCommands {
                     resolve(tabs[0]) ;
                 } else {
                     reject("Unable to get current tab") ;
+                }
+            });
+        }) ;
+    }
+
+    async #getTabById(id) {
+        return new Promise((resolve, reject) => {
+            chrome.tabs.get(id, tab => {
+                if (tab) {
+                    resolve(tab) ;
+                } else {
+                    reject(`ID ${id} not found.`) ;
                 }
             });
         }) ;
