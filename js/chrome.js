@@ -175,21 +175,28 @@ class ChromeCommands {
         if(ChromeCommands.flags.new.includes(action)) {}
 
         if(ChromeCommands.flags.list.includes(action)) {
-            if(!name) {
-                try {
-                    let allTabs = await this.#getAllTabs() ;
-                    for(let t in allTabs) {
-                        result += `[${t}] ${allTabs[t].id} ` ;
-                        result += `: ${allTabs[t].title}\n` ;
-                    }
-                } catch (e) {
-                    return await cmdErr( this.terminal, "Failed to get current tab: " + e, 1 ) ;
+            let allTabs = [] ;
+
+            try {
+                if(!name) {
+                    allTabs = await this.#getAllTabs() ;
+                } else {
+                    allTabs = await this.#getAllTabs(
+                        item =>
+                            item.title?.toLowerCase()?.startsWith(name.toLowerCase())
+                    ) ;
                 }
-            } else {
-                // TODO: Filter tabs returned by name
+            } catch (e) {
+                return await cmdErr( this.terminal, "Failed to get current tab: " + e, 1 ) ;
             }
+
+            for(let t in allTabs) {
+                result += `[${t}] ${allTabs[t].id} ` ;
+                result += `: ${allTabs[t].title}\n` ;
+            }
+
             this.terminal.terminal.status = 0 ;
-            await this.terminal.println( result ) ;
+            await this.terminal.print( result ) ;
             return result ;
         }
 
@@ -276,11 +283,14 @@ class ChromeCommands {
         }) ;
     }
 
-    async #getAllTabs() {
+    async #getAllTabs(filter) {
         return new Promise((resolve, reject) => {
             chrome.tabs.query({}, tabs => {
                 if (tabs.length) {
-                    resolve(tabs) ;
+                    if(typeof filter === "function")
+                        resolve(tabs.filter(filter)) ;
+                    else
+                        resolve(tabs) ;
                 } else {
                     reject("Unable to get tabs") ;
                 }
