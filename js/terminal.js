@@ -314,7 +314,6 @@ class ChromeTerminal {
                     (keyCode > 95  && keyCode < 112)   || // numpad keys
                     (keyCode > 185 && keyCode < 193)   || // ;=,-./` (in order)
                     (keyCode > 218 && keyCode < 223)) {   // [\]' (in order)
-                    char = char.toUpperCase() ;
                     userIn.push(char);
                     await this.print(char, 0);
                     this.insertCarrot(this.terminal.display.carrot);

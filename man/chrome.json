@@ -1,0 +1,8 @@
+{
+  "CD": "Enter specified folder",
+  "LS": "List contents of current bookmark folder",
+  "MKDIR": "Create a new folder",
+  "RMDIR": "Delete a specified folder",
+  "CP": "Copy a bookmark",
+  "MV": "Move a bookmark"
+}

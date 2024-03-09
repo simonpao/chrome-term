@@ -4,35 +4,143 @@ const VAR_MODE_STRING = 2 ;
 const VAR_MODE_VAR    = 3 ;
 
 function registerDefaultCommands(terminal) {
-    terminal.registerCmd( "ADD",       { args: [ "addend", "addend" ], callback: addCmd.bind(terminal) }) ;
-    terminal.registerCmd( "ASSIGN",    { args: [ "variableValue", "TO", "variableName" ], callback: assignmentCmd.bind(terminal) }) ;
-    terminal.registerCmd( "CLEAR",     { callback: clrCmd.bind(terminal) }) ;
-    terminal.registerCmd( "CLR",       { callback: clrCmd.bind(terminal) }) ;
-    terminal.registerCmd( "CLS",       { callback: clrCmd.bind(terminal) }) ;
-    terminal.registerCmd( "COLOR",     { args: [ "color" ], callback: colorCmd.bind(terminal) }) ;
-    terminal.registerCmd( "DELETE",    { args: [ "line" ], callback: deleteCmd.bind(terminal) }) ;
-    terminal.registerCmd( "DIVIDE",    { args: [ "dividend", "divisor" ], callback: divideCmd.bind(terminal) }) ;
-    terminal.registerCmd( "DOWNLOAD",  { callback: downloadCmd.bind(terminal) }) ;
-    terminal.registerCmd( "EQUALS",    { args: [ "operand", "operand" ], callback: equalsCmd.bind(terminal) }) ;
-    terminal.registerCmd( "EXIT",      { callback: exitCmd.bind(terminal) }) ;
-    terminal.registerCmd( "EXP",       { args: [ "base", "factor" ], callback: exponentCmd.bind(terminal) }) ;
-    terminal.registerCmd( "GT",        { args: [ "operand", "operand" ], callback: greaterThanCmd.bind(terminal) }) ;
-    terminal.registerCmd( "HELP",      { args: [ "cmd" ], callback: helpCmd.bind(terminal) }) ;
-    terminal.registerCmd( "IF",        { args: [ "conditional", "THEN", "expression", "ELSE", "expression" ], callback: ifCmd.bind(terminal) }) ;
-    terminal.registerCmd( "LIST",      { args: [ "start", "end" ], callback: listCmd.bind(terminal) }) ;
-    terminal.registerCmd( "LOGARITHM", { args: [ "argument", "base" ], callback: logarithmCmd.bind(terminal) }) ;
-    terminal.registerCmd( "LT",        { args: [ "operand", "operand" ], callback: lessThanCmd.bind(terminal) }) ;
-    terminal.registerCmd( "MOVE",      { args: [ "from", "to" ], callback: moveCmd.bind(terminal) }) ;
-    terminal.registerCmd( "MULTIPLY",  { args: [ "multiplicand", "multiplier" ], callback: multiplyCmd.bind(terminal) }) ;
-    terminal.registerCmd( "PRINT",     { args: [ "text" ], callback: printCmd.bind(terminal) }) ;
-    terminal.registerCmd( "RESET",     { callback: resetCmd.bind(terminal) }) ;
-    terminal.registerCmd( "RND",       { args: [ "max" ], callback: rndCmd.bind(terminal) }) ;
-    terminal.registerCmd( "RUN",       { callback: runCmd.bind(terminal) }) ;
-    terminal.registerCmd( "SETCURSOR", { args: [ "x", "y" ], callback: setCursorCmd.bind(terminal) }) ;
-    terminal.registerCmd( "SQRT",      { args: [ "radicand", "base" ], callback: squareRootCmd.bind(terminal) }) ;
-    terminal.registerCmd( "SUBTRACT",  { args: [ "minuend", "subtrahend" ], callback: subtractCmd.bind(terminal) }) ;
-    terminal.registerCmd( "SYSTEM",    { args: [ "parameter" ], callback: systemCmd.bind(terminal) }) ;
-    terminal.registerCmd( "VARS",      { callback: listDeclaredVarsCmd.bind(terminal) }) ;
+    terminal.registerCmd( "ADD", {
+        args: [ "addend", "addend" ],
+        callback: addCmd.bind(terminal),
+        help: "./man/commands.json"
+    }) ;
+    terminal.registerCmd( "ASSIGN", {
+        args: [ "variableValue", "TO", "variableName" ],
+        callback: assignmentCmd.bind(terminal),
+        help: "./man/commands.json"
+    }) ;
+    terminal.registerCmd( "CLEAR", {
+        callback: clrCmd.bind(terminal),
+        help: "./man/commands.json"
+    }) ;
+    terminal.registerCmd( "CLR", {
+        callback: clrCmd.bind(terminal),
+        help: "./man/commands.json"
+    }) ;
+    terminal.registerCmd( "CLS", {
+        callback: clrCmd.bind(terminal),
+        help: "./man/commands.json"
+    }) ;
+    terminal.registerCmd( "COLOR", {
+        args: [ "color" ],
+        callback: colorCmd.bind(terminal),
+        help: "./man/commands.json"
+    }) ;
+    terminal.registerCmd( "DELETE", {
+        args: [ "line" ],
+        callback: deleteCmd.bind(terminal),
+        help: "./man/commands.json"
+    }) ;
+    terminal.registerCmd( "DIVIDE", {
+        args: [ "dividend", "divisor" ],
+        callback: divideCmd.bind(terminal),
+        help: "./man/commands.json"
+    }) ;
+    terminal.registerCmd( "DOWNLOAD", {
+        callback: downloadCmd.bind(terminal),
+        help: "./man/commands.json"
+    }) ;
+    terminal.registerCmd( "EQUALS", {
+        args: [ "operand", "operand" ],
+        callback: equalsCmd.bind(terminal),
+        help: "./man/commands.json"
+    }) ;
+    terminal.registerCmd( "EXIT", {
+        callback: exitCmd.bind(terminal),
+        help: "./man/commands.json"
+    }) ;
+    terminal.registerCmd( "EXP", {
+        args: [ "base", "factor" ],
+        callback: exponentCmd.bind(terminal),
+        help: "./man/commands.json"
+    }) ;
+    terminal.registerCmd( "GT", {
+        args: [ "operand", "operand" ],
+        callback: greaterThanCmd.bind(terminal),
+        help: "./man/commands.json"
+    }) ;
+    terminal.registerCmd( "HELP", {
+        args: [ "cmd" ],
+        callback: helpCmd.bind(terminal),
+        help: "./man/commands.json"
+    }) ;
+    terminal.registerCmd( "IF", {
+        args: [ "conditional", "THEN", "expression", "ELSE", "expression" ],
+        callback: ifCmd.bind(terminal),
+        help: "./man/commands.json"
+    }) ;
+    terminal.registerCmd( "LIST", {
+        args: [ "start", "end" ],
+        callback: listCmd.bind(terminal),
+        help: "./man/commands.json"
+    }) ;
+    terminal.registerCmd( "LOGARITHM", {
+        args: [ "argument", "base" ],
+        callback: logarithmCmd.bind(terminal),
+        help: "./man/commands.json"
+    }) ;
+    terminal.registerCmd( "LT", {
+        args: [ "operand", "operand" ],
+        callback: lessThanCmd.bind(terminal),
+        help: "./man/commands.json"
+    }) ;
+    terminal.registerCmd( "MOVE", {
+        args: [ "from", "to" ],
+        callback: moveCmd.bind(terminal),
+        help: "./man/commands.json"
+    }) ;
+    terminal.registerCmd( "MULTIPLY", {
+        args: [ "multiplicand", "multiplier" ],
+        callback: multiplyCmd.bind(terminal),
+        help: "./man/commands.json"
+    }) ;
+    terminal.registerCmd( "PRINT", {
+        args: [ "text" ],
+        callback: printCmd.bind(terminal),
+        help: "./man/commands.json"
+    }) ;
+    terminal.registerCmd( "RESET", {
+        callback: resetCmd.bind(terminal),
+        help: "./man/commands.json"
+    }) ;
+    terminal.registerCmd( "RND", {
+        args: [ "max" ],
+        callback: rndCmd.bind(terminal),
+        help: "./man/commands.json"
+    }) ;
+    terminal.registerCmd( "RUN", {
+        callback: runCmd.bind(terminal),
+        help: "./man/commands.json"
+    }) ;
+    terminal.registerCmd( "SETCURSOR", {
+        args: [ "x", "y" ],
+        callback: setCursorCmd.bind(terminal),
+        help: "./man/commands.json"
+    }) ;
+    terminal.registerCmd( "SQRT", {
+        args: [ "radicand", "base" ],
+        callback: squareRootCmd.bind(terminal),
+        help: "./man/commands.json"
+    }) ;
+    terminal.registerCmd( "SUBTRACT", {
+        args: [ "minuend", "subtrahend" ],
+        callback: subtractCmd.bind(terminal),
+        help: "./man/commands.json"
+    }) ;
+    terminal.registerCmd( "SYSTEM", {
+        args: [ "parameter" ],
+        callback: systemCmd.bind(terminal),
+        help: "./man/commands.json"
+    }) ;
+    terminal.registerCmd( "VARS", {
+        callback: listDeclaredVarsCmd.bind(terminal),
+        help: "./man/commands.json"
+    }) ;
 }
 
 async function assignmentCmd(args) {
@@ -303,19 +411,26 @@ async function helpCmd(args) {
 
     if(args[1]) {
         let cmd = args[1].toUpperCase() ;
-        if( typeof this.terminal.registeredCmd[cmd] !== "undefined" && typeof this.terminal.registeredCmd[cmd].args !== "undefined" ) {
-            let out = "Arguments for " + cmd + " are: " + this.terminal.registeredCmd[cmd].args.join(", ") + "."
+
+        if( typeof this.terminal.registeredCmd[cmd] !== "undefined" ) {
+            let out = "" ;
+            if( this.terminal.registeredCmd[cmd].help ) {
+                let helpText = await $.getJSON( this.terminal.registeredCmd[cmd].help ) ;
+                out += helpText[cmd] ;
+            }
+
+            if( typeof this.terminal.registeredCmd[cmd].args !== "undefined" ) {
+                if(out !== "") out += "\n" ;
+                out += "Arguments for " + cmd + " are: " + this.terminal.registeredCmd[cmd].args.join(", ") + "."
+            } else {
+                if(out !== "") out += "\n" ;
+                out += "There are no arguments for " + cmd + "."
+            }
             this.terminal.status = 0 ;
             await this.println( out ) ;
             return out ;
-        } else if( typeof this.terminal.registeredCmd[cmd] === "undefined" ) {
-            let out = "\"" + args[1] + "\" is not recognized as a valid command."
-            return await cmdErr( this,  out, 1 ) ;
         } else {
-            let out = "There are no arguments for " + cmd + "."
-            this.terminal.status = 0 ;
-            await this.println( out ) ;
-            return out ;
+            return await cmdErr( this,  "\"" + args[1] + "\" is not recognized as a valid command.", 1 ) ;
         }
     }
     let out = "Available commands are: " + Object.keys(this.terminal.registeredCmd).join(", ") + ".\n" +

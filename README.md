@@ -21,6 +21,7 @@ Examples include:
 
 Directory structure will be based on bookmark directories.
  - `cd` to move into folders
+ - `ls` to view folder contents
  - `mkdir` to create new folders
  - `rmdir` to delete a folder
  - `cp` to copy

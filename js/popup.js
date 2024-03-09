@@ -7,6 +7,9 @@ try {
         callback: snake.bind(terminal)
     }) ;
 
+    let bookmarks = await chrome.bookmarks.getTree() ;
+    let chromeCmd = new ChromeCommands(terminal, bookmarks) ;
+
     $("#terminal-input").focus();
 
     await terminal.startInputLoop() ;
