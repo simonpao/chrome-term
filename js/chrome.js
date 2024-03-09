@@ -1,4 +1,11 @@
 class ChromeCommands {
+    static flags = {
+        open:  ["--OPEN",  "OPEN",  "-O", "O"],
+        close: ["--CLOSE", "CLOSE", "-C", "C"],
+        new:   ["--NEW",   "NEW",   "-N", "N"],
+        list:  ["--LIST",  "LIST",  "-L", "L", "LS"]
+    }
+
     path = { text:"/", id: "0", parentId: null } ;
     settings = {
         account: "Chrome",
@@ -148,24 +155,34 @@ class ChromeCommands {
         let name = args.splice(2, args.length-1).join(" ") ;
         let result = "" ;
 
-        switch(action) {
-            case "OPEN":
-            case "O":
-                let bookmark = this.#getItemByName(name, this.path.id )[0] ;
-                if(!bookmark)
-                    return await cmdErr( this.terminal, `Bookmark "${name}" not found.`, 1 ) ;
-                if(bookmark.type !== "bookmark")
-                    return await cmdErr( this.terminal, `${name} is not a bookmark.`, 1 ) ;
-                result = bookmark.url ;
-                await this.#openNewTab(bookmark.url) ;
-                break ;
+        if(ChromeCommands.flags.open.includes(action)) {
+            let bookmark = this.#getItemByName(name, this.path.id )[0] ;
+            if(!bookmark)
+                return await cmdErr( this.terminal, `Bookmark "${name}" not found.`, 1 ) ;
+            if(bookmark.type !== "bookmark")
+                return await cmdErr( this.terminal, `${name} is not a bookmark.`, 1 ) ;
+            result = bookmark.url ;
+            await this.#openNewTab(bookmark.url) ;
+            this.terminal.terminal.status = 0 ;
+            await this.terminal.println( `Bookmark opened in new tab.` ) ;
+            return result ;
         }
 
-        this.terminal.terminal.status = 0 ;
+        this.terminal.terminal.status = 1 ;
+        await this.terminal.println( `Failed to process tab command.` ) ;
         return result ;
     }
 
     async tabTab(args) {
+        let action = args[1]?.toUpperCase() ;
+        let name = args.splice(2, args.length-1).join(" ") ;
+
+        if(ChromeCommands.flags.open.includes(action)) {
+            let bookmark = this.#getItemByPartialName(name, this.path.id ) ;
+            if(bookmark.length && bookmark[0].type === "bookmark")
+                return args[0] + " " + args[1] + " " + bookmark[0].title ;
+        }
+
         return "" ;
     }
 
@@ -241,6 +258,7 @@ class ChromeCommands {
                         await chrome.tabs.group({ groupId: tabGroup[0].id, tabIds: tab.id });
                     }
                 }
+                resolve() ;
             }) ;
         }) ;
     }

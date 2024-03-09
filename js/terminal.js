@@ -88,6 +88,7 @@ class ChromeTerminal {
                 this.terminal.in = tmpDisplay.in ;
                 this.refresh() ;
                 this.setCharPos(this.terminal.x, this.terminal.y) ;
+                this.terminal.display.printPrompt = false ;
             }
         } catch(e) {}
     }
@@ -352,17 +353,15 @@ class ChromeTerminal {
                 let cmd = args[0].toUpperCase() ;
                 if( typeof this.terminal.registeredCmd[cmd]?.ontab !== "undefined" ) {
                     result = await this.terminal.registeredCmd[cmd].ontab(args, userIn, keyCode) ;
-                    if(typeof result === "string") {
+                    if(typeof result === "string" && result !== "") {
                         userIn.splice( 0, userIn.length ) ;
                         userIn.push(...result.split("")) ;
+                        this.setCharPos(this.terminal.in.x, this.terminal.in.y) ;
+                        await this.print(result) ;
+                        this.insertCarrot(this.terminal.display.carrot);
                     }
                 }
 
-                if(result !== "") {
-                    this.setCharPos(this.terminal.in.x, this.terminal.in.y) ;
-                    await this.print(result) ;
-                    this.insertCarrot(this.terminal.display.carrot);
-                }
                 break ;
         }
     }
