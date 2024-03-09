@@ -214,19 +214,19 @@ class ChromeTerminal {
         this.saveDisplayInfo() ;
     }
 
-    async println(data, timeout) {
+    async println(data, timeout, color) {
         data += "\n" ;
-        await this.print(data, timeout) ;
+        await this.print(data, timeout, color) ;
     }
 
-    async printAt(data, x, y, timeout) {
+    async printAt(data, x, y, timeout, color) {
         this.setCharPos(x, y) ;
-        await this.print(data, timeout) ;
+        await this.print(data, timeout, color) ;
     }
 
-    async printlnAt(data, x, y, timeout) {
+    async printlnAt(data, x, y, timeout, color) {
         data += "\n" ;
-        await this.printAt(data, x, y, timeout) ;
+        await this.printAt(data, x, y, timeout, color) ;
     }
 
     async inputText(prompt) {

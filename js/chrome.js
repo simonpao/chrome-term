@@ -1,5 +1,8 @@
 class ChromeCommands {
     path = { text:"/", id: "0", parentId: null } ;
+    settings = {
+        account: "Chrome"
+    }
 
     constructor(terminal, bookmarks) {
         this.bookmarks = this.#processBookmarks(bookmarks) ;
@@ -14,6 +17,10 @@ class ChromeCommands {
         });
         terminal.registerCmd("LS", {
             callback: this.ls.bind(this),
+            help: "./man/chrome.json"
+        });
+        terminal.registerCmd("SU", {
+            callback: this.su.bind(this),
             help: "./man/chrome.json"
         });
         terminal.registerCmd("MKDIR", {
@@ -65,19 +72,29 @@ class ChromeCommands {
         this.path.id = dir.id ;
         this.path.parentId = dir.parentId ;
         this.path.text = this.#constructPath() ;
+        this.terminal.terminal.status = 0 ;
 
         this.#savePath() ;
     }
 
     async ls() {
         let dirs = this.#getDirContents(this.path.id) ;
-        this.terminal.terminal.status = 0 ;
         let out = "" ;
         for(let dir of dirs) {
+            await this.terminal.println(dir.title, 0, dir.type === "dir" ? "blue" : "white");
             out += dir.title + "\n" ;
         }
-        await this.terminal.print(out);
+        this.terminal.terminal.status = 0 ;
         return out ;
+    }
+
+    async su(args) {
+        if(args.length < 2)
+            return await cmdErr( this.terminal, "Syntax error; su requires a username.", 1 ) ;
+
+        this.settings.account = args[1] ;
+
+        this.#saveSettings() ;
     }
 
     async mkdir(args) {}
@@ -178,8 +195,12 @@ class ChromeCommands {
 
     #savePath() {
         this.terminal.terminal.display.path = this.path.text ;
-        let jsonString = JSON.stringify(this.path) ;
-        localStorage.setItem(`${this.terminal.localStoragePrefix}--cliPath`, jsonString);
+        localStorage.setItem(`${this.terminal.localStoragePrefix}--cliPath`, JSON.stringify(this.path));
+    }
+
+    #saveSettings() {
+        this.terminal.terminal.display.account = this.settings.account ;
+        localStorage.setItem(`${this.terminal.localStoragePrefix}--cliSettings`, JSON.stringify(this.settings));
     }
 
     #restorePath() {
