@@ -1,3 +1,4 @@
+
 try {
     let terminal = new ChromeTerminal(60, 25, 0) ;
     registerDefaultCommands(terminal);
@@ -7,12 +8,15 @@ try {
         callback: snake.bind(terminal)
     }) ;
 
-    let bookmarks = await chrome.bookmarks.getTree() ;
-    let chromeCmd = new ChromeCommands(terminal, bookmarks) ;
+    (async () => {
+        let bookmarks = await chrome.bookmarks.getTree() ;
+        let chromeCmd = new ChromeCommands(terminal, bookmarks) ;
 
-    $("#terminal-input").focus();
+        $("#terminal-input").focus();
 
-    await terminal.startInputLoop() ;
+        await terminal.startInputLoop() ;
+    })() ;
+
 } catch(e) {
     console.error(e) ;
 }
