@@ -21,6 +21,7 @@ class ChromeTerminal {
             input: [],
             variables: {},
             suppressOutput: false,
+            aliases: {}
         },
         registeredCmd: {},
         localStoragePrefix: "chrome-term"
@@ -33,10 +34,10 @@ class ChromeTerminal {
         if(rows > 100) throw "Maximum of 100 rows."
 
         try {
-            let jsTerminalProgramInputJson = localStorage.getItem(`${this.terminal.localStoragePrefix}--programInput`);
-            let tmpProgramInput = JSON.parse(jsTerminalProgramInputJson) ;
-            if( tmpProgramInput !== null)
-                this.terminal.program.input = tmpProgramInput ;
+            let jsTerminalProgramJson = localStorage.getItem(`${this.terminal.localStoragePrefix}--programInput`);
+            let tmpProgram = JSON.parse(jsTerminalProgramJson) ;
+            if( tmpProgram !== null)
+                this.terminal.program = tmpProgram ;
         } catch(e) {}
 
         this.terminal.columns = columns ;
@@ -425,8 +426,8 @@ class ChromeTerminal {
     }
 
     async setLocalStorage() {
-        let jsonString = JSON.stringify(this.terminal.program.input) ;
-        localStorage.setItem(`${this.terminal.localStoragePrefix}--programInput`, jsonString);
+        let jsonString = JSON.stringify(this.terminal.program) ;
+        localStorage.setItem(`${this.terminal.localStoragePrefix}--programInput`, jsonString) ;
     }
 
     saveDisplayInfo() {

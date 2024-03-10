@@ -9,6 +9,10 @@ function registerDefaultCommands(terminal) {
         callback: addCmd.bind(terminal),
         help: "./man/commands.json"
     }) ;
+    terminal.registerCmd( "ALIAS", {
+        callback: aliasCmd.bind(terminal),
+        help: "./man/commands.json"
+    }) ;
     terminal.registerCmd( "ASSIGN", {
         args: [ "variableValue", "TO", "variableName" ],
         callback: assignmentCmd.bind(terminal),
@@ -112,10 +116,6 @@ function registerDefaultCommands(terminal) {
         callback: printCmd.bind(terminal),
         help: "./man/commands.json"
     }) ;
-    /*terminal.registerCmd( "RESET", {
-        callback: resetCmd.bind(terminal),
-        help: "./man/commands.json"
-    }) ;*/
     terminal.registerCmd( "RND", {
         args: [ "max" ],
         callback: rndCmd.bind(terminal),
@@ -190,6 +190,7 @@ async function assignmentCmd(args) {
     if( !name )
         return await cmdErr( this,  "Syntax error; missing variable name.", 1 ) ;
 
+    await this.setLocalStorage() ;
     this.terminal.program.variables[name] = value ;
     this.terminal.status = 0 ;
     return value ;
@@ -480,34 +481,82 @@ async function listCmd(args) {
 }
 
 async function runCmd(args) {
-    let stackLimit = 100 ;
-    for( let line = 0; line < this.terminal.program.input.length; line++ ) {
-        if(this.terminal.program.input.hasOwnProperty(line) &&
-           this.terminal.program.input[line] ) {
-            let control = await this.processCmd(this.terminal.program.input[line]) ;
-            if(control?.startsWith("GOTO:")) {
-                line = parseInt( control.split(":")[1] )-1 ;
-                stackLimit-- ;
-                if(!stackLimit)
-                    return await cmdErr( this, "Stack limit exceeded.", this.returnStatus());
-            }
-            if(this.returnStatus() !== 0) {
-                return await cmdErr( this, "Execution error.", this.returnStatus());
-            }
-        }
-    }
+    await run(this, this.terminal.program.input) ;
+    await this.setLocalStorage() ;
     this.terminal.status = 0 ;
     return "" ;
 }
 
-async function saveCmd(args) {
+async function run(term, program) {
+    let stackLimit = 100 ;
+    for( let line = 0; line < program.length; line++ ) {
+        if(program.hasOwnProperty(line) &&
+           program[line] ) {
+            if(program[line].toUpperCase().startsWith("RUN") ||
+               program[line].toUpperCase().startsWith("SAVE"))
+                return await cmdErr( term, "Cannot execute control command within a program.", term.returnStatus());
 
+            let control = await term.processCmd(program[line]) ;
+            if(control?.startsWith("GOTO:")) {
+                line = parseInt( control.split(":")[1] )-1 ;
+                stackLimit-- ;
+                if(!stackLimit)
+                    return await cmdErr( term, "Stack limit exceeded.", term.returnStatus());
+            }
+            if(term.returnStatus() !== 0) {
+                return await cmdErr( term, "Execution error.", term.returnStatus());
+            }
+        }
+    }
+}
+
+async function saveCmd(args) {
+    if(args.length !== 2)
+        return await cmdErr( this, "Syntax error; SAVE requires one argument.", 1 ) ;
+    if(typeof this.terminal.registeredCmd[args[1].toUpperCase()] === "object")
+        return await cmdErr( this, "Cannot SAVE an alias with the same name as built in command.", 1 ) ;
+
+    this.terminal.program.aliases[args[1].toUpperCase()] = this.terminal.program.input ;
+    await this.setLocalStorage() ;
+    this.terminal.status = 0 ;
+    return "" ;
+}
+
+async function aliasCmd(args) {
+    if(args.length >= 2) {
+        if(args[1].toUpperCase() === "-D") {
+            delete this.terminal.program.aliases[args[2].toUpperCase()] ;
+            await this.setLocalStorage() ;
+            this.terminal.status = 0 ;
+            return "" ;
+        }
+
+        if(typeof this.terminal.program.aliases[args[1].toUpperCase()] === "object") {
+            await run(this, this.terminal.program.aliases[args[1].toUpperCase()]) ;
+            await this.setLocalStorage() ;
+            this.terminal.status = 0 ;
+            return "" ;
+        }
+    }
+
+    let aliases = Object.keys(this.terminal.program.aliases) ;
+    if(!aliases.length)
+        await this.println("No available aliases yet") ;
+    else {
+        await this.println("Available aliases:") ;
+        for(let alias of aliases) {
+            await this.println(alias) ;
+        }
+    }
+
+    this.terminal.status = 0 ;
+    return "" ;
 }
 
 async function newCmd(args) {
-    localStorage.removeItem(`${this.terminal.localStoragePrefix}--programInput`);
     this.terminal.program.input = [] ;
-    await this.println("Stored program cleared.")
+    await this.println("Stored program cleared.") ;
+    await this.setLocalStorage() ;
     this.terminal.status = 0 ;
     return "" ;
 }
@@ -593,12 +642,6 @@ async function rndCmd(args) {
     return out.toString() ;
 }
 
-async function resetCmd(args) {
-    localStorage.removeItem(`${this.terminal.localStoragePrefix}--programInput`);
-    location.reload();
-    return "" ;
-}
-
 async function systemCmd(args) {
     try {
         args = await replaceVarsInArgs(this, args) ;
@@ -645,7 +688,7 @@ async function moveCmd(args) {
     }
 
     if(args.length !== 3)
-        return await cmdErr( this,  "Syntax error; MOVE requires three arguments.", 1 ) ;
+        return await cmdErr( this,  "Syntax error; MOVE requires two arguments.", 1 ) ;
 
     if( typeof args[1] === "undefined" || isNaN(args[1]) || typeof args[2] === "undefined" || isNaN(args[2]) )
         return await cmdErr( this,  "Syntax error; MOVE command requires two integer arguments.", 1 ) ;
@@ -660,6 +703,7 @@ async function moveCmd(args) {
     delete this.terminal.program.input[args[1]] ;
     this.terminal.program.input[args[2]] = out ;
 
+    await this.setLocalStorage() ;
     this.terminal.status = 0 ;
     await this.println( args[2] + " " + out ) ;
     return args[2] + " " + out ;
@@ -686,6 +730,7 @@ async function deleteCmd(args) {
     let out = this.terminal.program.input[args[1]] ;
     delete this.terminal.program.input[args[1]] ;
 
+    await this.setLocalStorage() ;
     this.terminal.status = 0 ;
     await this.println( args[1] + " " + out ) ;
     return args[1] + " " + out ;
