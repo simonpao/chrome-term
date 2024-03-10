@@ -388,6 +388,11 @@ class ChromeTerminal {
             return await this.terminal.registeredCmd[cmd].callback(args) ;
         }
 
+        // Check if it's an alias
+        if( typeof this.terminal.program.aliases[cmd] !== "undefined" ) {
+            return await run( this, this.terminal.program.aliases[cmd] ) ;
+        }
+
         // If this is a line number, add it to the program.input array
         if(!isNaN(args[0])) {
             let lineNum = parseInt(args[0]) ;
