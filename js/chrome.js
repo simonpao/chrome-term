@@ -110,7 +110,7 @@ class ChromeCommands {
                     let id = this.path.id ;
                     let save = "" ;
                     for(let part of nameParts) {
-                        dir = this.#getItemByName((save !== "" ? save : part), id )[0] ;
+                        dir = this.#getItemByName((save !== "" ? save + part : part), id )[0] ;
                         if(!dir) save += part + "/" ;
                         else {
                             save = "" ;
@@ -389,9 +389,16 @@ class ChromeCommands {
             let nameParts = name.split("/") ;
             let id = this.path.id ;
             let save = "" ;
-            for(let part of nameParts) {
-                item = this.#getItemByPartialName((save !== "" ? save : part), id ) ;
-                if(!item) save += part + "/" ;
+            for(let i in nameParts) if(nameParts.hasOwnProperty(i)) {
+                let part = nameParts[i] ;
+
+                if(parseInt(i)+1 === nameParts.length)
+                    item = this.#getItemByPartialName((save !== "" ? save : part), id ) ;
+                else
+                    item = this.#getItemByName((save !== "" ? save + part : part), id ) ;
+
+                if(!item || !item.length)
+                    save += part + "/" ;
                 else {
                     save = "" ;
                     id = item[0]?.id ;
