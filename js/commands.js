@@ -895,6 +895,57 @@ async function evalExpr(terminal, expr, mode) {
     return value ;
 }
 
+async  function printList(term, collection, attribute = "title", printPrompt = true) {
+    if(printPrompt) await term.print("\n") ;
+
+    let columns = term.terminal.columns ;
+    let titles = [] ;
+    let max = 0 ;
+    let out = "" ;
+
+    for(let c of collection) {
+        titles.push({text: c[attribute], len: c[attribute].length, type: c.type});
+        if(c[attribute].length > max)
+            max = c[attribute].length ;
+    }
+
+    if(max < columns/4) {
+        for(let t of titles) {
+            out += t.text + spaces((columns / 4) - t.len) ;
+            await term.print(t.text + spaces((columns / 4) - t.len), 0, getColor(t.type));
+        }
+    }
+    else if(max < columns/3) {
+        for(let t of titles) {
+            out += t.text + spaces((columns / 3) - t.len) ;
+            await term.print(t.text + spaces((columns / 3) - t.len), 0, getColor(t.type));
+        }
+    }
+    else if(max < columns/2) {
+        for(let t of titles) {
+            out += t.text + spaces((columns / 2) - t.len) ;
+            await term.print(t.text + spaces((columns / 2) - t.len), 0, getColor(t.type));
+        }
+    }
+    else {
+        for(let t of titles) {
+            out += t.text + "\n"
+            await term.println(
+                padWithSpaces( t.text, term.terminal.columns-1 ),
+                0,
+                getColor(t.type)
+            );
+        }
+    }
+
+    await term.print("\n");
+    if(printPrompt) {
+        await term.printPrompt(term.terminal.display.prompt);
+        term.insertCarrot(term.terminal.display.carrot);
+    }
+    return "" ;
+}
+
 function getColor(type) {
     switch(type) {
         case "dir":

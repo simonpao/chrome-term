@@ -360,55 +360,8 @@ class ChromeCommands {
         return "" ;
     }
 
-    async #printList(collection, attribute = "title", printPrompt = true) {
-        if(printPrompt) await this.terminal.print("\n") ;
-
-        let columns = this.terminal.terminal.columns ;
-        let titles = [] ;
-        let max = 0 ;
-        let out = "" ;
-
-        for(let c of collection) {
-            titles.push({text: c[attribute], len: c[attribute].length, type: c.type});
-            if(c[attribute].length > max)
-                max = c[attribute].length ;
-        }
-
-        if(max < columns/4) {
-            for(let t of titles) {
-                out += t.text + spaces((columns / 4) - t.len) ;
-                await this.terminal.print(t.text + spaces((columns / 4) - t.len), 0, getColor(t.type));
-            }
-        }
-        else if(max < columns/3) {
-            for(let t of titles) {
-                out += t.text + spaces((columns / 3) - t.len) ;
-                await this.terminal.print(t.text + spaces((columns / 3) - t.len), 0, getColor(t.type));
-            }
-        }
-        else if(max < columns/2) {
-            for(let t of titles) {
-                out += t.text + spaces((columns / 2) - t.len) ;
-                await this.terminal.print(t.text + spaces((columns / 2) - t.len), 0, getColor(t.type));
-            }
-        }
-        else {
-            for(let t of titles) {
-                out += t.text + "\n"
-                await this.terminal.println(
-                    padWithSpaces( t.text, this.terminal.terminal.columns-1 ),
-                    0,
-                    getColor(t.type)
-                );
-            }
-        }
-
-        await this.terminal.print("\n");
-        if(printPrompt) {
-            await this.terminal.printPrompt(this.terminal.terminal.display.prompt);
-            this.terminal.insertCarrot(this.terminal.terminal.display.carrot);
-        }
-        return "" ;
+    async #printList(collection, attribute, printPrompt) {
+        return await printList(this.terminal, collection, attribute, printPrompt) ;
     }
 
     async #insertCompletion(args, type) {
