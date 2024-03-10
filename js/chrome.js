@@ -217,7 +217,33 @@ class ChromeCommands {
         return name ;
     }
 
-    async rmdir(args) {}
+    async rmdir(args) {if(args.length < 2)
+        return await cmdErr( this.terminal, "Syntax error; rmdir requires a directory name.", 1 ) ;
+
+        let name = args.splice(1, args.length-1).join(" ") ;
+
+        switch(name) {
+            case ".":
+            case "~":
+            case "..":
+                return await cmdErr( this.terminal, "Syntax error; rmdir name is invalid.", 1 ) ;
+            default:
+                try {
+                    let rmDir = await this.#getItemByName(name, this.path.id) ;
+                    if(rmDir.length > 1) {
+                        await this.#printList(rmDir, "title", false);
+                        return await cmdErr( this.terminal, "Multiple directories; rmdir aborted.", 1 ) ;
+                    } else {
+                        await this.#deleteFolder(rmDir[0].id) ;
+                    }
+                } catch(e) {
+                    return await cmdErr( this.terminal, "Runtime error; " + e, 1 ) ;
+                }
+        }
+
+        this.terminal.terminal.status = 0 ;
+        return name ;
+    }
 
     async cp(args) {}
 
@@ -412,19 +438,15 @@ class ChromeCommands {
         }) ;
     }
 
-    async #deleteFolder(title, parentId) {
+    async #deleteFolder(id) {
         return new Promise((resolve, reject) => {
-            if(!title || !parentId) {
+            if(!id) {
                 reject("Error deleting folder") ;
                 return ;
             }
-            chrome.bookmarks.delete(
-                {
-                    parentId: parentId.toString(),
-                    title: title
-                }, res => {
-                    resolve(res) ;
-                },
+            chrome.bookmarks.remove(id, res => resolve(res));
+            this.bookmarks.splice(
+                this.bookmarks.findIndex( item => item.id === id ), 1
             );
         }) ;
     }
