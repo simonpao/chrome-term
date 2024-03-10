@@ -185,7 +185,37 @@ class ChromeCommands {
         this.#saveSettings() ;
     }
 
-    async mkdir(args) {}
+    async mkdir(args) {
+        if(args.length < 2)
+            return await cmdErr( this.terminal, "Syntax error; mkdir requires a directory name.", 1 ) ;
+
+        let name = args.splice(1, args.length-1).join(" ") ;
+
+        switch(name) {
+            case ".":
+            case "~":
+            case "..":
+                return await cmdErr( this.terminal, "Syntax error; mkdir name is invalid.", 1 ) ;
+            default:
+                try {
+                    let newDir = await this.#createFolder(name, this.path.id);
+                    this.bookmarks.push({
+                        title: newDir.title,
+                        id: newDir.id,
+                        parentId: newDir.parentId,
+                        index: newDir.index,
+                        dateAdded: newDir.dateAdded,
+                        dateGroupModified: newDir.dateGroupModified,
+                        type: "dir"
+                    });
+                } catch(e) {
+                    return await cmdErr( this.terminal, "Runtime error; " + e, 1 ) ;
+                }
+        }
+
+        this.terminal.terminal.status = 0 ;
+        return name ;
+    }
 
     async rmdir(args) {}
 
@@ -377,6 +407,23 @@ class ChromeCommands {
                     title: title
                 }, newFolder => {
                     resolve(newFolder) ;
+                },
+            );
+        }) ;
+    }
+
+    async #deleteFolder(title, parentId) {
+        return new Promise((resolve, reject) => {
+            if(!title || !parentId) {
+                reject("Error deleting folder") ;
+                return ;
+            }
+            chrome.bookmarks.delete(
+                {
+                    parentId: parentId.toString(),
+                    title: title
+                }, res => {
+                    resolve(res) ;
                 },
             );
         }) ;
