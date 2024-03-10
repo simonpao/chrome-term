@@ -49,11 +49,13 @@ class ChromeCommands {
         terminal.registerCmd("CP", {
             args: [ "source-bookmark", "destination-bookmark" ],
             callback: this.cp.bind(this),
+            ontab: this.cpTab.bind(this),
             help: "./man/chrome.json"
         });
         terminal.registerCmd("MV", {
             args: [ "source-bookmark", "destination-bookmark" ],
             callback: this.mv.bind(this),
+            ontab: this.mvTab.bind(this),
             help: "./man/chrome.json"
         });
         terminal.registerCmd("TAB", {
@@ -117,7 +119,7 @@ class ChromeCommands {
     }
 
     async cdTab(args) {
-        return this.#insertCompletion(args) ;
+        return this.#insertCompletion(args, "dir") ;
     }
 
     async ls(args) {
@@ -238,12 +240,20 @@ class ChromeCommands {
     }
 
     async rmdirTab(args) {
-        return this.#insertCompletion(args) ;
+        return this.#insertCompletion(args, "dir") ;
     }
 
     async cp(args) {}
 
+    async cpTab(args) {
+        return this.#insertCompletion(args, "bookmark") ;
+    }
+
     async mv(args) {}
+
+    async mvTab(args) {
+        return this.#insertCompletion(args, "bookmark") ;
+    }
 
     async tab(args) {
         let action = args[1]?.toUpperCase() ;
@@ -401,9 +411,9 @@ class ChromeCommands {
         return "" ;
     }
 
-    async #insertCompletion(args) {
+    async #insertCompletion(args, type) {
         let name = args.splice(1, args.length-1).join(" ") ;
-        let item = this.#getItemByPartialName(name, this.path.id ) ;
+        let item = this.#getItemByPartialName(name, this.path.id, type ) ;
         if(item.length === 1)
             return args[0] + " " + item[0].title ;
         if(item.length > 1) {
@@ -534,7 +544,13 @@ class ChromeCommands {
         ) ;
     }
 
-    #getItemByPartialName(part, parentId) {
+    #getItemByPartialName(part, parentId, type) {
+        if(typeof type === "string")
+            return this.bookmarks.filter(
+                item =>
+                    item.title?.toLowerCase()?.startsWith(part?.toLowerCase()) &&
+                    item.parentId === parentId && item.type === type
+            ) ;
         return this.bookmarks.filter(
             item =>
                 item.title?.toLowerCase()?.startsWith(part?.toLowerCase()) &&
