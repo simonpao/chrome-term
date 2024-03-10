@@ -102,24 +102,9 @@ class ChromeCommands {
                     return await cmdErr( this.terminal, `Directory ${name} not found.`, 1 ) ;
                 break ;
             default:
-                if(name.endsWith("/"))
-                    name = name.slice(0, name.length-1) ;
-                dir = this.#getItemByName(name, this.path.id )[0] ;
-                if(!dir) {
-                    let nameParts = name.split("/") ;
-                    let id = this.path.id ;
-                    let save = "" ;
-                    for(let part of nameParts) {
-                        dir = this.#getItemByName((save !== "" ? save + part : part), id )[0] ;
-                        if(!dir) save += part + "/" ;
-                        else {
-                            save = "" ;
-                            id = dir?.id ;
-                        }
-                    }
-                    if(!dir)
-                        return await cmdErr( this.terminal, `Directory ${name} not found.`, 1 ) ;
-                }
+                dir = this.getItemFromPath(name) ;
+                if(!dir)
+                    return await cmdErr( this.terminal, `Directory ${name} not found.`, 1 ) ;
                 if(dir.type !== "dir")
                     return await cmdErr( this.terminal, `${name} is not a directory.`, 1 ) ;
 
@@ -279,7 +264,7 @@ class ChromeCommands {
         if(ChromeCommands.flags.open.includes(action)) {
             if(!name)
                 return await cmdErr( this.terminal, `No bookmark specified.`, 1 ) ;
-            let bookmark = this.#getItemByName(name, this.path.id )[0] ;
+            let bookmark = this.getItemFromPath(name) ;
             if(!bookmark)
                 return await cmdErr( this.terminal, `Bookmark "${name}" not found.`, 1 ) ;
             if(bookmark.type !== "bookmark")
@@ -436,6 +421,26 @@ class ChromeCommands {
             return begin + " " + name ;
         }
         return "" ;
+    }
+
+    getItemFromPath(path) {
+        if(path.endsWith("/"))
+            path = path.slice(0, path.length-1) ;
+        let item = this.#getItemByName(path, this.path.id )[0] ;
+        if(!item) {
+            let pathParts = path.split("/") ;
+            let id = this.path.id ;
+            let save = "" ;
+            for(let part of pathParts) {
+                item = this.#getItemByName((save !== "" ? save + part : part), id )[0] ;
+                if(!item) save += part + "/" ;
+                else {
+                    save = "" ;
+                    id = item?.id ;
+                }
+            }
+        }
+        return item ;
     }
 
     async #createBookmark(title, url, folderId) {
