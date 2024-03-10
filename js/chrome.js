@@ -125,7 +125,7 @@ class ChromeCommands {
     async ls(args) {
         let dirs = this.#getDirContents(this.path.id);
         let flags = {} ;
-        if(this.#isFlags(args[1]))
+        if(isFlags(args[1]))
             flags = this.#parseFlags(args[1]) ;
 
         if(flags.A) {
@@ -156,13 +156,13 @@ class ChromeCommands {
 
             for(let dir of dirs) {
                 let tmp = dir.type === "dir" ? "d" : "-" ;
-                tmp += " " + this.#padWithSpaces( dir.id.toString(), 5) ;
-                tmp += " " + this.#padWithSpaces( dir.parentId.toString(), 6) ;
-                tmp += " " + this.#padWithSpaces( this.#getFormattedDate(dir.dateAdded), 18) ;
-                tmp += " " + this.#padWithSpaces( dir.title, this.terminal.terminal.columns-36 ) ;
+                tmp += " " + padWithSpaces( dir.id.toString(), 5) ;
+                tmp += " " + padWithSpaces( dir.parentId.toString(), 6) ;
+                tmp += " " + padWithSpaces( getFormattedDate(dir.dateAdded), 18) ;
+                tmp += " " + padWithSpaces( dir.title, this.terminal.terminal.columns-36 ) ;
 
                 out += tmp + "\n" ;
-                await this.terminal.println(tmp, 0, this.#getColor(dir.type)) ;
+                await this.terminal.println(tmp, 0, getColor(dir.type)) ;
             }
 
             this.terminal.terminal.status = 0;
@@ -376,29 +376,29 @@ class ChromeCommands {
 
         if(max < columns/4) {
             for(let t of titles) {
-                out += t.text + this.#spaces((columns / 4) - t.len) ;
-                await this.terminal.print(t.text + this.#spaces((columns / 4) - t.len), 0, this.#getColor(t.type));
+                out += t.text + spaces((columns / 4) - t.len) ;
+                await this.terminal.print(t.text + spaces((columns / 4) - t.len), 0, getColor(t.type));
             }
         }
         else if(max < columns/3) {
             for(let t of titles) {
-                out += t.text + this.#spaces((columns / 3) - t.len) ;
-                await this.terminal.print(t.text + this.#spaces((columns / 3) - t.len), 0, this.#getColor(t.type));
+                out += t.text + spaces((columns / 3) - t.len) ;
+                await this.terminal.print(t.text + spaces((columns / 3) - t.len), 0, getColor(t.type));
             }
         }
         else if(max < columns/2) {
             for(let t of titles) {
-                out += t.text + this.#spaces((columns / 2) - t.len) ;
-                await this.terminal.print(t.text + this.#spaces((columns / 2) - t.len), 0, this.#getColor(t.type));
+                out += t.text + spaces((columns / 2) - t.len) ;
+                await this.terminal.print(t.text + spaces((columns / 2) - t.len), 0, getColor(t.type));
             }
         }
         else {
             for(let t of titles) {
                 out += t.text + "\n"
                 await this.terminal.println(
-                    this.#padWithSpaces( t.text, this.terminal.terminal.columns-1 ),
+                    padWithSpaces( t.text, this.terminal.terminal.columns-1 ),
                     0,
-                    this.#getColor(t.type)
+                    getColor(t.type)
                 );
             }
         }
@@ -625,49 +625,6 @@ class ChromeCommands {
         }
     }
 
-    #getColor(type) {
-        switch(type) {
-            case "dir":
-                return "blue" ;
-            case "bookmark":
-            default:
-                return "white" ;
-        }
-    }
-
-    #padWithSpaces(str, totalLen) {
-        if( str.length === totalLen ) return str ;
-        if( str.length < totalLen ) {
-            str += this.#spaces(totalLen - str.length) ;
-        } else {
-            str = str.slice(0, totalLen-3) + "..."
-        }
-        return str ;
-    }
-
-    #padWithZeros(str, totalLen) {
-        if( str.length === totalLen ) return str ;
-        if( str.length < totalLen ) {
-            str = this.#spaces(totalLen - str.length, "0") + str ;
-        } else {
-            str = str.slice(0, totalLen-1) + "-"
-        }
-        return str ;
-    }
-
-    #spaces(num, char = " ") {
-        let spaces = "" ;
-        while(num) {
-            spaces += char ;
-            num-- ;
-        }
-        return spaces ;
-    }
-
-    #isFlags(str) {
-        return str?.startsWith("-") ;
-    }
-
     #parseFlags(str) {
         // Initialize object with all possible modifiers
         let opts = {} ;
@@ -683,16 +640,5 @@ class ChromeCommands {
         }
 
         return opts ;
-    }
-
-    #getFormattedDate(timestamp) {
-        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" ];
-        let date = new Date(timestamp) ;
-        let str = date.getFullYear() + " " ;
-        str += monthNames[date.getMonth()] + " " ;
-        str += this.#padWithZeros((date.getDate()).toString(), 2) + " " ;
-        str += this.#padWithZeros((date.getHours()).toString(), 2) + ":" ;
-        str += this.#padWithZeros((date.getMinutes()).toString(), 2) + " " ;
-        return str ;
     }
 }

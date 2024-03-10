@@ -785,6 +785,7 @@ async function downloadCmd() {
     document.body.removeChild(element);
 }
 
+// Utility functions
 async function cmdErr(terminal, msg, code) {
     if( !code ) code = 1 ;
     terminal.terminal.status = code ;
@@ -892,4 +893,60 @@ async function evalExpr(terminal, expr, mode) {
             break ;
     }
     return value ;
+}
+
+function getColor(type) {
+    switch(type) {
+        case "dir":
+            return "blue" ;
+        case "bookmark":
+        default:
+            return "white" ;
+    }
+}
+
+function padWithSpaces(str, totalLen) {
+    if( str.length === totalLen ) return str ;
+    if( str.length < totalLen ) {
+        str += spaces(totalLen - str.length) ;
+    } else if (str.length > 5) {
+        str = str.slice(0, totalLen-3) + "..."
+    } else {
+        str = str.slice(0, totalLen)
+    }
+    return str ;
+}
+
+function padWithZeros(str, totalLen) {
+    if( str.length === totalLen ) return str ;
+    if( str.length < totalLen ) {
+        str = spaces(totalLen - str.length, "0") + str ;
+    } else {
+        str = str.slice(0, totalLen-1) + "-"
+    }
+    return str ;
+}
+
+function spaces(num, char = " ") {
+    let spaces = "" ;
+    while(num) {
+        spaces += char ;
+        num-- ;
+    }
+    return spaces ;
+}
+
+function isFlags(str) {
+    return str?.startsWith("-") ;
+}
+
+function getFormattedDate(timestamp) {
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" ];
+    let date = new Date(timestamp) ;
+    let str = date.getFullYear() + " " ;
+    str += monthNames[date.getMonth()] + " " ;
+    str += padWithZeros((date.getDate()).toString(), 2) + " " ;
+    str += padWithZeros((date.getHours()).toString(), 2) + ":" ;
+    str += padWithZeros((date.getMinutes()).toString(), 2) + " " ;
+    return str ;
 }
