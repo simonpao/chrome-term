@@ -317,7 +317,9 @@ class ChromeCommands {
             return result ;
         }
 
-        if(ChromeCommands.flags.new.includes(action)) {}
+        if(ChromeCommands.flags.new.includes(action)) {
+            await this.#openNewTab(null) ;
+        }
 
         if(ChromeCommands.flags.list.includes(action)) {
             let allTabs = [] ;
