@@ -1,11 +1,12 @@
 class ChromeCommands {
     static flags = {
-        open:  ["--OPEN",  "OPEN",  "-O", "O"],
-        close: ["--CLOSE", "CLOSE", "-C", "C"],
-        new:   ["--NEW",   "NEW",   "-N", "N"],
-        list:  ["--LIST",  "LIST",  "-L", "L", "LS"],
-        info:  ["--INFO",  "INFO",  "-I", "I"],
-        modifiers: ["A", "F", "L"]
+        open:  ["--OPEN",  "OPEN",  "O"],
+        close: ["--CLOSE", "CLOSE", "C"],
+        new:   ["--NEW",   "NEW",   "N"],
+        list:  ["--LIST",  "LIST",  "L", "LS"],
+        info:  ["--INFO",  "INFO",  "I"],
+        activate: ["--ACTIVATE", "ACTIVATE", "A"],
+        modifiers: ["A", "F", "I", "L"]
     }
 
     path = { text:"/", id: "0", parentId: null } ;
@@ -280,11 +281,11 @@ class ChromeCommands {
             if(!name)
                 return await cmdErr( this.terminal, `No tab specified.`, 1 ) ;
             let tab = await this.#getTabByName(name) ;
-            if(!tab)
+            if(!tab || !tab.length)
                 return await cmdErr( this.terminal, `Tab "${name}" not found.`, 1 ) ;
             await this.#closeTab(tab[0].id) ;
             this.terminal.terminal.status = 0 ;
-            await this.terminal.println( `Tab ID ${tab.id} closed.` ) ;
+            await this.terminal.println( `Tab ID ${tab[0].id} closed.` ) ;
             return result ;
         }
 
@@ -338,6 +339,18 @@ class ChromeCommands {
             return result ;
         }
 
+        if(ChromeCommands.flags.activate.includes(action)) {
+            if(!name)
+                return await cmdErr( this.terminal, `No tab specified.`, 1 ) ;
+            let tab = await this.#getTabByName(name) ;
+            if(!tab || !tab.length)
+                return await cmdErr( this.terminal, `Tab "${name}" not found.`, 1 ) ;
+            await this.#activateTab(tab[0].id) ;
+            this.terminal.terminal.status = 0 ;
+            await this.terminal.println( `Tab ID ${tab[0].id} activated.` ) ;
+            return result ;
+        }
+
         this.terminal.terminal.status = 1 ;
         await this.terminal.println( `Failed to process tab command.` ) ;
         return result ;
@@ -350,7 +363,9 @@ class ChromeCommands {
             return await this.#insertCompletion(args, "dir", 2) ;
         }
 
-        if(ChromeCommands.flags.close.includes(action)) {
+        if(ChromeCommands.flags.close.includes(action) ||
+           ChromeCommands.flags.info.includes(action) ||
+           ChromeCommands.flags.activate.includes(action)) {
             let name = args.slice(2, args.length).join(" ") ;
             let tabs = await this.#getAllTabs(item =>
                 item.title?.toLowerCase()?.startsWith(name.toLowerCase())
@@ -423,26 +438,6 @@ class ChromeCommands {
         return "" ;
     }
 
-    getItemFromPath(path) {
-        if(path.endsWith("/"))
-            path = path.slice(0, path.length-1) ;
-        let item = this.#getItemByName(path, this.path.id )[0] ;
-        if(!item) {
-            let pathParts = path.split("/") ;
-            let id = this.path.id ;
-            let save = "" ;
-            for(let part of pathParts) {
-                item = this.#getItemByName((save !== "" ? save + part : part), id )[0] ;
-                if(!item) save += part + "/" ;
-                else {
-                    save = "" ;
-                    id = item?.id ;
-                }
-            }
-        }
-        return item ;
-    }
-
     async #createBookmark(title, url, folderId) {
         return new Promise((resolve, reject) => {
             if(!folderId || !title || !url) {
@@ -488,6 +483,26 @@ class ChromeCommands {
                 this.bookmarks.findIndex( item => item.id === id ), 1
             );
         }) ;
+    }
+
+    getItemFromPath(path) {
+        if(path.endsWith("/"))
+            path = path.slice(0, path.length-1) ;
+        let item = this.#getItemByName(path, this.path.id )[0] ;
+        if(!item) {
+            let pathParts = path.split("/") ;
+            let id = this.path.id ;
+            let save = "" ;
+            for(let part of pathParts) {
+                item = this.#getItemByName((save !== "" ? save + part : part), id )[0] ;
+                if(!item) save += part + "/" ;
+                else {
+                    save = "" ;
+                    id = item?.id ;
+                }
+            }
+        }
+        return item ;
     }
 
     // Tab operations
@@ -563,6 +578,16 @@ class ChromeCommands {
     async #closeTab(id) {
         return new Promise((resolve, reject) => {
             chrome.tabs.remove(id, res => {
+                resolve(res) ;
+            })
+        }) ;
+    }
+
+    async #activateTab(id) {
+        return new Promise((resolve, reject) => {
+            chrome.tabs.update(id, {
+                highlighted: true
+            }, res => {
                 resolve(res) ;
             })
         }) ;
