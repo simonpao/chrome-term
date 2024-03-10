@@ -550,6 +550,18 @@ async function aliasCmd(args) {
             return out ;
         }
 
+        // Recall an alias
+        if(args[1].toUpperCase() === "-R") {
+            let alias = this.terminal.program.aliases[args[2].toUpperCase()] ;
+            if(!alias)
+                await this.println(`Alias ${args[2]} does not exist; nothing recalled.`) ;
+            else
+                this.terminal.program.input = this.terminal.program.aliases[args[2].toUpperCase()] ;
+            await this.setLocalStorage() ;
+            this.terminal.status = 0 ;
+            return "" ;
+        }
+
         // Execute an alias
         if(typeof this.terminal.program.aliases[args[1].toUpperCase()] === "object") {
             await run(this, this.terminal.program.aliases[args[1].toUpperCase()]) ;
