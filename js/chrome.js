@@ -409,22 +409,52 @@ class ChromeCommands {
     async tabTab(args) {
         let action = args[1]?.toUpperCase() ;
 
+        let flags = {} ;
+        let startPath = 2 ;
+        if(isFlags(args[2])) {
+            flags = this.#parseFlags(args[2]) ;
+            startPath++ ;
+        }
+
         if(ChromeCommands.flags.open.includes(action)) {
-            return await this.#insertCompletion(args, "dir", 2) ;
+            if(flags.I) {
+                let begin = args.slice(0, startPath).join(" ") ;
+                let name = args.slice(startPath, args.length).join(" ") ;
+                let items = this.#filterItemsById(name) ;
+
+                if(items.length === 1)
+                    return begin + " " + items[0].id ;
+                if(items.length > 1) {
+                    await this.#printList(items, "id") ;
+                    return begin + " " + name ;
+                }
+            }
+            else
+                return await this.#insertCompletion(args, "dir", startPath) ;
         }
 
         if(ChromeCommands.flags.close.includes(action) ||
            ChromeCommands.flags.info.includes(action) ||
            ChromeCommands.flags.activate.includes(action)) {
-            let name = args.slice(2, args.length).join(" ") ;
-            let tabs = await this.#getAllTabs(item =>
-                item.title?.toLowerCase()?.startsWith(name.toLowerCase())
-            ) ;
+            let begin = args.slice(0, startPath).join(" ") ;
+            let name = args.slice(startPath, args.length).join(" ") ;
+
+            let tabs ;
+            if(flags.I)
+                tabs = await this.#getAllTabs(item =>
+                    item.id?.toString()?.startsWith(name)
+                ) ;
+            else
+                tabs = await this.#getAllTabs(item =>
+                    item.title?.toLowerCase()?.startsWith(name.toLowerCase())
+                ) ;
+
+            let attr = flags.I ? "id" : "title" ;
             if(tabs.length === 1)
-                return args[0] + " " + args[1] + " " + tabs[0].title ;
+                return begin + " " + tabs[0][attr] ;
             if(tabs.length > 1) {
-                await this.#printList(tabs) ;
-                return args[0] + " " + args[1] + " " + name ;
+                await this.#printList(tabs, attr) ;
+                return begin + " " + name ;
             }
         }
 
@@ -659,6 +689,10 @@ class ChromeCommands {
 
     #getItemById(id) {
         return this.bookmarks.filter(item => item.id === id) ;
+    }
+
+    #filterItemsById(id) {
+        return this.bookmarks.filter(item => item.id.toString().startsWith(id)) ;
     }
 
     #getItemByName(name, parentId) {

@@ -910,7 +910,7 @@ async function printList(term, collection, attribute = "title", printPrompt = tr
     let out = "" ;
 
     for(let c of collection) {
-        let val = attribute !== "" ? c[attribute] : c ;
+        let val = attribute !== "" ? c[attribute].toString() : c.toString() ;
         titles.push({text: val, len: val.length, type: c.type});
         if(val.length > max)
             max = val.length ;
