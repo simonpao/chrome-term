@@ -135,7 +135,7 @@ class ChromeCommands {
     }
 
     async cdTab(args) {
-        return this.#insertCompletion(args, "dir") ;
+        return await this.#insertCompletion(args, "dir") ;
     }
 
     async ls(args) {
@@ -256,19 +256,19 @@ class ChromeCommands {
     }
 
     async rmdirTab(args) {
-        return this.#insertCompletion(args, "dir") ;
+        return await this.#insertCompletion(args, "dir") ;
     }
 
     async cp(args) {}
 
     async cpTab(args) {
-        return this.#insertCompletion(args, "bookmark") ;
+        return await this.#insertCompletion(args, "bookmark") ;
     }
 
     async mv(args) {}
 
     async mvTab(args) {
-        return this.#insertCompletion(args, "bookmark") ;
+        return await this.#insertCompletion(args, "bookmark") ;
     }
 
     async tab(args) {
@@ -291,7 +291,18 @@ class ChromeCommands {
             return result ;
         }
 
-        if(ChromeCommands.flags.close.includes(action)) {}
+        if(ChromeCommands.flags.close.includes(action)) {
+            if(!name)
+                return await cmdErr( this.terminal, `No tab specified.`, 1 ) ;
+            let tab = await this.#getTabByName(name) ;
+            if(!tab)
+                return await cmdErr( this.terminal, `Tab "${name}" not found.`, 1 ) ;
+            await this.#closeTab(tab[0].id) ;
+            this.terminal.terminal.status = 0 ;
+            await this.terminal.println( `Tab ID ${tab.id} closed.` ) ;
+            return result ;
+        }
+
         if(ChromeCommands.flags.new.includes(action)) {}
 
         if(ChromeCommands.flags.list.includes(action)) {
@@ -349,14 +360,20 @@ class ChromeCommands {
 
     async tabTab(args) {
         let action = args[1]?.toUpperCase() ;
-        let name = args.splice(2, args.length-1).join(" ") ;
 
         if(ChromeCommands.flags.open.includes(action)) {
-            let bookmark = this.#getItemByPartialName(name, this.path.id ) ;
-            if(bookmark.length === 1 && bookmark[0].type === "bookmark")
-                return args[0] + " " + args[1] + " " + bookmark[0].title ;
-            if(bookmark.length > 1) {
-                await this.#printList(bookmark) ;
+            return await this.#insertCompletion(args, "dir", 2) ;
+        }
+
+        if(ChromeCommands.flags.close.includes(action)) {
+            let name = args.slice(2, args.length).join(" ") ;
+            let tabs = await this.#getAllTabs(item =>
+                item.title?.toLowerCase()?.startsWith(name.toLowerCase())
+            ) ;
+            if(tabs.length === 1)
+                return args[0] + " " + args[1] + " " + tabs[0].title ;
+            if(tabs.length > 1) {
+                await this.#printList(tabs) ;
                 return args[0] + " " + args[1] + " " + name ;
             }
         }
@@ -380,8 +397,9 @@ class ChromeCommands {
         return await printList(this.terminal, collection, attribute, printPrompt) ;
     }
 
-    async #insertCompletion(args, type) {
-        let name = args.splice(1, args.length-1).join(" ") ;
+    async #insertCompletion(args, type, start = 1) {
+        let begin = args.slice(0, start).join(" ") ;
+        let name = args.slice(start, args.length).join(" ") ;
         let item = this.#getItemByPartialName(name, this.path.id, type ) ;
         let path = item[0]?.title || "" ;
 
@@ -407,12 +425,15 @@ class ChromeCommands {
             }
         }
         if(item.length === 1) {
-            if(!path.endsWith("/") && type === "dir") path += "/" ;
-            return args[0] + " " + path ;
+            if(path.endsWith("/") && item[0]?.type !== "dir")
+                path = path.slice(0, path.length-1) ;
+            if(!path.endsWith("/") && item[0]?.type === "dir")
+                path += "/" ;
+            return begin + " " + path ;
         }
         if(item.length > 1) {
             await this.#printList(item) ;
-            return args[0] + " " + name ;
+            return begin + " " + name ;
         }
         return "" ;
     }
@@ -433,6 +454,7 @@ class ChromeCommands {
         }) ;
     }
 
+    // Folder operations
     async #createFolder(title, parentId) {
         return new Promise((resolve, reject) => {
             if(!title || !parentId) {
@@ -463,6 +485,7 @@ class ChromeCommands {
         }) ;
     }
 
+    // Tab operations
     async #getAllTabs(filter) {
         return new Promise((resolve, reject) => {
             chrome.tabs.query({}, tabs => {
@@ -475,6 +498,16 @@ class ChromeCommands {
                     reject("Unable to get tabs") ;
                 }
             });
+        }) ;
+    }
+
+    async #getTabByName(name) {
+        return new Promise((resolve, reject) => {
+            chrome.tabs.query({
+                title: name
+            }, tabs => {
+                resolve(tabs) ;
+            })
         }) ;
     }
 
@@ -522,6 +555,15 @@ class ChromeCommands {
         }) ;
     }
 
+    async #closeTab(id) {
+        return new Promise((resolve, reject) => {
+            chrome.tabs.remove(id, res => {
+                resolve(res) ;
+            })
+        }) ;
+    }
+
+    // Utility functions
     #getDirContents(parentId) {
         return this.bookmarks.filter(item => item.parentId === parentId) ;
     }

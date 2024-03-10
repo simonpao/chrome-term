@@ -265,7 +265,7 @@ class ChromeTerminal {
             if( $terminalInput.val() === "" ) {
                 this.logDebugInfo("e.which = " + e.which + "; e.keyCode = " + e.keyCode);
                 callback(e.keyCode, e.key, userIn, resolve, $terminalInput.is(":focus"), specialKey);
-                this.saveDisplayInfo() ;
+                //this.saveDisplayInfo() ;
             }
         }) ;
 
@@ -277,7 +277,7 @@ class ChromeTerminal {
                 callback(this.charToKeyCode(chars[i]), chars[i], userIn, resolve, false, specialKey);
             }
             $terminalInput.val("") ;
-            this.saveDisplayInfo() ;
+            //this.saveDisplayInfo() ;
         }) ;
 
     }
