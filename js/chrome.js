@@ -103,7 +103,7 @@ class ChromeCommands {
                     return await cmdErr( this.terminal, `Directory ${name} not found.`, 1 ) ;
                 break ;
             default:
-                dir = this.getItemFromPath(name) ;
+                dir = this.#getItemFromPath(name) ;
                 if(!dir)
                     return await cmdErr( this.terminal, `Directory ${name} not found.`, 1 ) ;
                 if(dir.type !== "dir")
@@ -259,13 +259,26 @@ class ChromeCommands {
 
     async tab(args) {
         let action = args[1]?.toUpperCase() ;
-        let name = args.splice(2, args.length-1).join(" ") ;
+
+        let flags = {} ;
+        let startPath = 2 ;
+        if(isFlags(args[2])) {
+            flags = this.#parseFlags(args[2]) ;
+            startPath++ ;
+        }
+
+        let name = args.slice(startPath, args.length).join(" ") ;
         let result = "" ;
 
         if(ChromeCommands.flags.open.includes(action)) {
             if(!name)
                 return await cmdErr( this.terminal, `No bookmark specified.`, 1 ) ;
-            let bookmark = this.getItemFromPath(name) ;
+            let bookmark ;
+            if(flags.I)
+                bookmark = this.#getItemById(name)[0] ;
+            else
+                bookmark = this.#getItemFromPath(name) ;
+
             if(!bookmark)
                 return await cmdErr( this.terminal, `Bookmark "${name}" not found.`, 1 ) ;
             if(bookmark.type !== "bookmark")
@@ -280,12 +293,27 @@ class ChromeCommands {
         if(ChromeCommands.flags.close.includes(action)) {
             if(!name)
                 return await cmdErr( this.terminal, `No tab specified.`, 1 ) ;
-            let tab = await this.#getTabByName(name) ;
-            if(!tab || !tab.length)
-                return await cmdErr( this.terminal, `Tab "${name}" not found.`, 1 ) ;
-            await this.#closeTab(tab[0].id) ;
+
+            let id ;
+            if(flags.I) {
+                id = name ;
+            } else {
+                let tab = await this.#getTabByName(name) ;
+                if(!tab || !tab.length)
+                    return await cmdErr( this.terminal, `Tab "${name}" not found.`, 1 ) ;
+                id = tab[0].id ;
+            }
+
+            if(!id)
+                return await cmdErr( this.terminal, `Runtime error; could not close tab.`, 1 ) ;
+
+            try {
+                await this.#closeTab(id) ;
+            } catch(e) {
+                return await cmdErr( this.terminal, `Runtime error; could not close tab: ${e}`, 1 ) ;
+            }
             this.terminal.terminal.status = 0 ;
-            await this.terminal.println( `Tab ID ${tab[0].id} closed.` ) ;
+            await this.terminal.println( `Tab ID ${id} closed.` ) ;
             return result ;
         }
 
@@ -307,9 +335,10 @@ class ChromeCommands {
                 return await cmdErr( this.terminal, e, 1 ) ;
             }
 
+            result += "ID             TITLE\n" ;
             for(let t in allTabs) {
-                result += `[${t}] ${allTabs[t].id} ` ;
-                result += `: ${allTabs[t].title}\n` ;
+                result += padWithSpaces(allTabs[t].id.toString() + ": ", 15);
+                result += padWithSpaces(allTabs[t].title, this.terminal.terminal.columns-16) + "\n" ;
             }
 
             this.terminal.terminal.status = 0 ;
@@ -322,8 +351,13 @@ class ChromeCommands {
             try {
                 if(!name) {
                     tab = await this.#getCurrentTab() ;
-                } else {
+                } else if(flags.I) {
                     tab = await this.#getTabById(parseInt(name)) ;
+                } else {
+                    tab = await this.#getTabByName(name) ;
+                    if(!tab || !tab.length)
+                        return await cmdErr( this.terminal, `Tab "${name}" not found.`, 1 ) ;
+                    tab = tab[0] ;
                 }
             } catch (e) {
                 return await cmdErr( this.terminal, e, 1 ) ;
@@ -342,12 +376,28 @@ class ChromeCommands {
         if(ChromeCommands.flags.activate.includes(action)) {
             if(!name)
                 return await cmdErr( this.terminal, `No tab specified.`, 1 ) ;
-            let tab = await this.#getTabByName(name) ;
-            if(!tab || !tab.length)
-                return await cmdErr( this.terminal, `Tab "${name}" not found.`, 1 ) ;
-            await this.#activateTab(tab[0].id) ;
+
+            let id ;
+            if(flags.I) {
+                id = name ;
+            } else {
+                let tab = await this.#getTabByName(name) ;
+                if(!tab || !tab.length)
+                    return await cmdErr( this.terminal, `Tab "${name}" not found.`, 1 ) ;
+                id = tab[0].id ;
+            }
+
+            if(!id)
+                return await cmdErr( this.terminal, `Runtime error; could not activate tab.`, 1 ) ;
+
+            try {
+                await this.#activateTab(id) ;
+            } catch(e) {
+                return await cmdErr( this.terminal, `Runtime error; could not activate tab: ${e}`, 1 ) ;
+            }
+
             this.terminal.terminal.status = 0 ;
-            await this.terminal.println( `Tab ID ${tab[0].id} activated.` ) ;
+            await this.terminal.println( `Tab ID ${id} activated.` ) ;
             return result ;
         }
 
@@ -485,7 +535,7 @@ class ChromeCommands {
         }) ;
     }
 
-    getItemFromPath(path) {
+    #getItemFromPath(path) {
         if(path.endsWith("/"))
             path = path.slice(0, path.length-1) ;
         let item = this.#getItemByName(path, this.path.id )[0] ;
@@ -577,19 +627,28 @@ class ChromeCommands {
 
     async #closeTab(id) {
         return new Promise((resolve, reject) => {
-            chrome.tabs.remove(id, res => {
-                resolve(res) ;
-            })
+            id = parseInt(id) ;
+            if(isNaN(id) || typeof id !== "number")
+                reject("ID must be a number.") ;
+            else
+                chrome.tabs.remove(parseInt(id), res => {
+                    resolve(res) ;
+                })
         }) ;
     }
 
     async #activateTab(id) {
         return new Promise((resolve, reject) => {
-            chrome.tabs.update(id, {
-                highlighted: true
-            }, res => {
-                resolve(res) ;
-            })
+            id = parseInt(id) ;
+            if(isNaN(id) || typeof id !== "number")
+                reject("ID must be a number.") ;
+            else
+                chrome.tabs.update(id, {
+                    active: true,
+                    highlighted: true
+                }, res => {
+                    resolve(res) ;
+                })
         }) ;
     }
 
