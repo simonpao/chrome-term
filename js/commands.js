@@ -447,10 +447,16 @@ async function helpCmd(args) {
             return await cmdErr( this,  "\"" + args[1] + "\" is not recognized as a valid command.", 1 ) ;
         }
     }
-    let out = "Available commands are: " + Object.keys(this.terminal.registeredCmd).join(", ") + ".\n" +
-        "You can also specify a line number and commands to add to the stored program."
-    this.terminal.status = 0 ;
+    let out = "Available commands are:"
     await this.println( out ) ;
+    out += await printList( this, Object.keys(this.terminal.registeredCmd), "", false ) ;
+    let tmp = "You can also specify a line number and commands to add to the stored program." ;
+    tmp += "\nFor example:"
+    tmp += "\n  10 PRINT HELLO WORLD!"
+    await this.println( tmp ) ;
+    out += tmp ;
+
+    this.terminal.status = 0 ;
     return out ;
 }
 
@@ -895,7 +901,7 @@ async function evalExpr(terminal, expr, mode) {
     return value ;
 }
 
-async  function printList(term, collection, attribute = "title", printPrompt = true) {
+async function printList(term, collection, attribute = "title", printPrompt = true) {
     if(printPrompt) await term.print("\n") ;
 
     let columns = term.terminal.columns ;
@@ -904,9 +910,10 @@ async  function printList(term, collection, attribute = "title", printPrompt = t
     let out = "" ;
 
     for(let c of collection) {
-        titles.push({text: c[attribute], len: c[attribute].length, type: c.type});
-        if(c[attribute].length > max)
-            max = c[attribute].length ;
+        let val = attribute !== "" ? c[attribute] : c ;
+        titles.push({text: val, len: val.length, type: c.type});
+        if(val.length > max)
+            max = val.length ;
     }
 
     if(max < columns/4) {
@@ -937,13 +944,13 @@ async  function printList(term, collection, attribute = "title", printPrompt = t
             );
         }
     }
-
+    out += "\n" ;
     await term.print("\n");
     if(printPrompt) {
         await term.printPrompt(term.terminal.display.prompt);
         term.insertCarrot(term.terminal.display.carrot);
     }
-    return "" ;
+    return out ;
 }
 
 function getColor(type) {
