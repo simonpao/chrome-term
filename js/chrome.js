@@ -14,6 +14,7 @@ class ChromeCommands {
     }
 
     constructor(terminal, bookmarks) {
+        this.unprocessed = bookmarks ;
         this.bookmarks = this.#processBookmarks(bookmarks) ;
         this.terminal = terminal ;
 
@@ -101,9 +102,24 @@ class ChromeCommands {
                     return await cmdErr( this.terminal, `Directory ${name} not found.`, 1 ) ;
                 break ;
             default:
+                if(name.endsWith("/"))
+                    name = name.slice(0, name.length-1) ;
                 dir = this.#getItemByName(name, this.path.id )[0] ;
-                if(!dir)
-                    return await cmdErr( this.terminal, `Directory ${name} not found.`, 1 ) ;
+                if(!dir) {
+                    let nameParts = name.split("/") ;
+                    let id = this.path.id ;
+                    let save = "" ;
+                    for(let part of nameParts) {
+                        dir = this.#getItemByName((save !== "" ? save : part), id )[0] ;
+                        if(!dir) save += part + "/" ;
+                        else {
+                            save = "" ;
+                            id = dir?.id ;
+                        }
+                    }
+                    if(!dir)
+                        return await cmdErr( this.terminal, `Directory ${name} not found.`, 1 ) ;
+                }
                 if(dir.type !== "dir")
                     return await cmdErr( this.terminal, `${name} is not a directory.`, 1 ) ;
 
@@ -367,8 +383,26 @@ class ChromeCommands {
     async #insertCompletion(args, type) {
         let name = args.splice(1, args.length-1).join(" ") ;
         let item = this.#getItemByPartialName(name, this.path.id, type ) ;
-        if(item.length === 1)
-            return args[0] + " " + item[0].title ;
+        let path = item[0]?.title || "" ;
+
+        if(item.length === 0 && type === "dir") {
+            let nameParts = name.split("/") ;
+            let id = this.path.id ;
+            let save = "" ;
+            for(let part of nameParts) {
+                item = this.#getItemByPartialName((save !== "" ? save : part), id ) ;
+                if(!item) save += part + "/" ;
+                else {
+                    save = "" ;
+                    id = item[0]?.id ;
+                    path += item[0]?.title + "/" ;
+                }
+            }
+        }
+        if(item.length === 1) {
+            if(!path.endsWith("/") && type === "dir") path += "/" ;
+            return args[0] + " " + path ;
+        }
         if(item.length > 1) {
             await this.#printList(item) ;
             return args[0] + " " + name ;
