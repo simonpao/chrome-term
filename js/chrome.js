@@ -43,6 +43,7 @@ class ChromeCommands {
         terminal.registerCmd("RMDIR", {
             args: [ "folder-name" ],
             callback: this.rmdir.bind(this),
+            ontab: this.rmdirTab.bind(this),
             help: "./man/chrome.json"
         });
         terminal.registerCmd("CP", {
@@ -116,16 +117,7 @@ class ChromeCommands {
     }
 
     async cdTab(args) {
-        let name = args.splice(1, args.length-1).join(" ") ;
-        let dir = this.#getItemByPartialName(name, this.path.id ) ;
-        if(dir.length === 1)
-            return args[0] + " " + dir[0].title ;
-        if(dir.length > 1) {
-            await this.#printList(dir) ;
-            return args[0] + " " + name ;
-        }
-
-        return "" ;
+        return this.#insertCompletion(args) ;
     }
 
     async ls(args) {
@@ -243,6 +235,10 @@ class ChromeCommands {
 
         this.terminal.terminal.status = 0 ;
         return name ;
+    }
+
+    async rmdirTab(args) {
+        return this.#insertCompletion(args) ;
     }
 
     async cp(args) {}
@@ -401,6 +397,18 @@ class ChromeCommands {
         if(printPrompt) {
             await this.terminal.printPrompt(this.terminal.terminal.display.prompt);
             this.terminal.insertCarrot(this.terminal.terminal.display.carrot);
+        }
+        return "" ;
+    }
+
+    async #insertCompletion(args) {
+        let name = args.splice(1, args.length-1).join(" ") ;
+        let item = this.#getItemByPartialName(name, this.path.id ) ;
+        if(item.length === 1)
+            return args[0] + " " + item[0].title ;
+        if(item.length > 1) {
+            await this.#printList(item) ;
+            return args[0] + " " + name ;
         }
         return "" ;
     }
