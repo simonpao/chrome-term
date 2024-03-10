@@ -468,15 +468,20 @@ async function printCmd(args) {
 }
 
 async function listCmd(args) {
-    let out = "" ;
-    for( let line in this.terminal.program.input) {
-        if( this.terminal.program.input[line] ) {
-            out += line + " " + this.terminal.program.input[line] + "\n" ;
-            await this.println( line + " " + this.terminal.program.input[line] ) ;
-        }
-    }
+    let out = await list(this, this.terminal.program.input) ;
     this.terminal.status = 0 ;
     await this.println( "End of Program." ) ;
+    return out ;
+}
+
+async function list(term, program) {
+    let out = "" ;
+    for( let line in program) {
+        if( program[line] ) {
+            out += line + " " + program[line] + "\n" ;
+            await term.println( line + " " + program[line] ) ;
+        }
+    }
     return out ;
 }
 
@@ -524,6 +529,7 @@ async function saveCmd(args) {
 
 async function aliasCmd(args) {
     if(args.length >= 2) {
+        // Delete an alias
         if(args[1].toUpperCase() === "-D") {
             delete this.terminal.program.aliases[args[2].toUpperCase()] ;
             await this.setLocalStorage() ;
@@ -531,6 +537,20 @@ async function aliasCmd(args) {
             return "" ;
         }
 
+        // List an alias
+        if(args[1].toUpperCase() === "-L") {
+            let alias = this.terminal.program.aliases[args[2].toUpperCase()] ;
+            let out = ""
+            if(!alias)
+                await this.println(`Alias ${args[2]} does not exist.`) ;
+            else
+                out = await list(this, alias) ;
+            this.terminal.status = 0 ;
+            await this.println( "End of Program." ) ;
+            return out ;
+        }
+
+        // Execute an alias
         if(typeof this.terminal.program.aliases[args[1].toUpperCase()] === "object") {
             await run(this, this.terminal.program.aliases[args[1].toUpperCase()]) ;
             await this.setLocalStorage() ;
