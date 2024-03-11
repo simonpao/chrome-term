@@ -420,18 +420,8 @@ class ChromeCommands {
         }
 
         if(ChromeCommands.flags.open.includes(action)) {
-            if(flags.I) {
-                let begin = args.slice(0, startPath).join(" ") ;
-                let name = args.slice(startPath, args.length).join(" ") ;
-                let items = this.#filterItemsById(name) ;
-
-                if(items.length === 1)
-                    return begin + " " + items[0].id ;
-                if(items.length > 1) {
-                    await this.#printList(items, "id") ;
-                    return begin + " " + name ;
-                }
-            }
+            if(flags.I)
+                return await this.#insertIdCompletion(args, startPath) ;
             else
                 return await this.#insertCompletion(args, "dir", startPath) ;
         }
@@ -439,26 +429,7 @@ class ChromeCommands {
         if(ChromeCommands.flags.close.includes(action) ||
            ChromeCommands.flags.info.includes(action) ||
            ChromeCommands.flags.activate.includes(action)) {
-            let begin = args.slice(0, startPath).join(" ") ;
-            let name = args.slice(startPath, args.length).join(" ") ;
-
-            let tabs ;
-            if(flags.I)
-                tabs = await this.#getAllTabs(item =>
-                    item.id?.toString()?.startsWith(name)
-                ) ;
-            else
-                tabs = await this.#getAllTabs(item =>
-                    item.title?.toLowerCase()?.startsWith(name.toLowerCase())
-                ) ;
-
-            let attr = flags.I ? "id" : "title" ;
-            if(tabs.length === 1)
-                return begin + " " + tabs[0][attr] ;
-            if(tabs.length > 1) {
-                await this.#printList(tabs, attr) ;
-                return begin + " " + name ;
-            }
+            return await this.#insertTabCompletion(args, startPath, flags) ;
         }
 
         return "" ;
@@ -503,7 +474,31 @@ class ChromeCommands {
             return result ;
         }
 
-        if(ChromeCommands.flags.new.includes(action)) {}
+        if(ChromeCommands.flags.new.includes(action)) {
+            if(this.path.id === "0")
+                return await cmdErr( this.terminal, `Bookmark cannot be saved to the root directory.`, 1 ) ;
+
+            let tab ;
+            try {
+                if(!name) {
+                    tab = await this.#getCurrentTab() ;
+                } else if(flags.I) {
+                    tab = await this.#getTabById(parseInt(name)) ;
+                } else {
+                    tab = await this.#getTabByName(name) ;
+                    if(!tab || !tab.length)
+                        return await cmdErr( this.terminal, `Tab "${name}" not found.`, 1 ) ;
+                    tab = tab[0] ;
+                }
+
+                await this.#createBookmark(tab.title, tab.url, this.path.id) ;
+                this.terminal.terminal.status = 0 ;
+                await this.terminal.println( `Bookmark saved as ${tab.title}.` ) ;
+                return result ;
+            } catch (e) {
+                return await cmdErr( this.terminal, e, 1 ) ;
+            }
+        }
 
         if(ChromeCommands.flags.info.includes(action)) {}
 
@@ -524,21 +519,17 @@ class ChromeCommands {
         if(ChromeCommands.flags.open.includes(action) ||
            ChromeCommands.flags.info.includes(action) ||
            ChromeCommands.flags.edit.includes(action)) {
-            if(flags.I) {
-                let begin = args.slice(0, startPath).join(" ") ;
-                let name = args.slice(startPath, args.length).join(" ") ;
-                let items = this.#filterItemsById(name) ;
-
-                if(items.length === 1)
-                    return begin + " " + items[0].id ;
-                if(items.length > 1) {
-                    await this.#printList(items, "id") ;
-                    return begin + " " + name ;
-                }
-            }
+            if(flags.I)
+                return await this.#insertIdCompletion(args, startPath) ;
             else
                 return await this.#insertCompletion(args, "dir", startPath) ;
         }
+
+        if(ChromeCommands.flags.new.includes(action)) {
+            return await this.#insertTabCompletion(args, startPath, flags) ;
+        }
+
+        return "" ;
     }
 
     async #printList(collection, attribute, printPrompt) {
@@ -580,7 +571,62 @@ class ChromeCommands {
             return begin + " " + path ;
         }
         if(item.length > 1) {
+            if(item.length > 100) {
+                await this.terminal.println(`\n${items.length} matches.`) ;
+                await this.terminal.printPrompt(this.terminal.terminal.display.prompt);
+                this.terminal.insertCarrot(this.terminal.terminal.display.carrot);
+                return begin + " " + name ;
+            }
             await this.#printList(item) ;
+            return begin + " " + name ;
+        }
+        return "" ;
+    }
+
+    async #insertIdCompletion(args, start = 1) {
+        let begin = args.slice(0, start).join(" ") ;
+        let name = args.slice(start, args.length).join(" ") ;
+        let items = this.#filterItemsById(name) ;
+
+        if(items.length === 1)
+            return begin + " " + items[0].id ;
+        if(items.length > 1) {
+            if(items.length > 100) {
+                await this.terminal.println(`\n${items.length} matches.`) ;
+                await this.terminal.printPrompt(this.terminal.terminal.display.prompt);
+                this.terminal.insertCarrot(this.terminal.terminal.display.carrot);
+                return begin + " " + name ;
+            }
+            await this.#printList(items, "id") ;
+            return begin + " " + name ;
+        }
+    }
+
+    async #insertTabCompletion(args, start = 1, flags = {}) {
+        let begin = args.slice(0, start).join(" ") ;
+        let name = args.slice(start, args.length).join(" ") ;
+
+        let tabs ;
+        if(flags.I)
+            tabs = await this.#getAllTabs(item =>
+                item.id?.toString()?.startsWith(name)
+            ) ;
+        else
+            tabs = await this.#getAllTabs(item =>
+                item.title?.toLowerCase()?.startsWith(name.toLowerCase())
+            ) ;
+
+        let attr = flags.I ? "id" : "title" ;
+        if(tabs.length === 1)
+            return begin + " " + tabs[0][attr] ;
+        if(tabs.length > 1) {
+            if(tabs.length > 100) {
+                await this.terminal.println(`\n${items.length} matches.`) ;
+                await this.terminal.printPrompt(this.terminal.terminal.display.prompt);
+                this.terminal.insertCarrot(this.terminal.terminal.display.carrot);
+                return begin + " " + name ;
+            }
+            await this.#printList(tabs, attr) ;
             return begin + " " + name ;
         }
         return "" ;
