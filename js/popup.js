@@ -13,6 +13,7 @@ try {
         let chromeCmd = new ChromeCommands(terminal, bookmarks) ;
 
         $("#terminal-input").focus();
+        $("body").removeClass("loading") ;
 
         await terminal.startInputLoop() ;
     })() ;

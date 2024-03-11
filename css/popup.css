@@ -24,6 +24,11 @@ body {
     height: max-content;
 }
 
+body.loading {
+    height: 520px;
+    width: 750px;
+}
+
 #terminal-container {
     margin: auto;
     width: max-content;
@@ -67,4 +72,40 @@ body {
     min-height:50px;
     max-height:350px;
     overflow: auto;
+}
+
+/* Loading spinner */
+#loading-spinner {
+    position: fixed;
+    width: 100vw;
+    height: 100vh;
+    display: none;
+}
+
+#loading-spinner img {
+    position: fixed;
+    top: 80px;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    margin: auto;
+}
+
+body.loading #loading-spinner {
+    display: block;
+}
+
+@keyframes rotate-clockwise {
+    0%   { transform: rotateZ(0deg); }
+    25%  { transform: rotateZ(90deg); }
+    50%  { transform: rotateZ(180deg); }
+    75%  { transform: rotateZ(270deg); }
+    100% { transform: rotateZ(360deg); }
+}
+
+body.loading #loading-spinner img {
+    animation-name: rotate-clockwise;
+    animation-duration: 0.5s;
+    animation-iteration-count: infinite;
+    animation-timing-function: linear;
 }
