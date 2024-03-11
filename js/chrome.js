@@ -911,11 +911,11 @@ class ChromeCommands {
 
     #savePath() {
         this.terminal.terminal.display.path = this.path.text ;
-        localStorage.setItem(`${this.terminal.localStoragePrefix}--cliPath`, JSON.stringify(this.path));
+        localStorage.setItem(`${this.terminal.terminal.localStoragePrefix}--cliPath`, JSON.stringify(this.path));
     }
 
     #restorePath() {
-        let jsonString = localStorage.getItem(`${this.terminal.localStoragePrefix}--cliPath`);
+        let jsonString = localStorage.getItem(`${this.terminal.terminal.localStoragePrefix}--cliPath`);
         let tmpPath = JSON.parse(jsonString) ;
         if( tmpPath ) {
             this.path = tmpPath ;
@@ -925,11 +925,11 @@ class ChromeCommands {
 
     #saveSettings() {
         this.terminal.terminal.display.account = this.settings.account ;
-        localStorage.setItem(`${this.terminal.localStoragePrefix}--cliSettings`, JSON.stringify(this.settings));
+        localStorage.setItem(`${this.terminal.terminal.localStoragePrefix}--cliSettings`, JSON.stringify(this.settings));
     }
 
     #restoreSettings() {
-        let jsonString = localStorage.getItem(`${this.terminal.localStoragePrefix}--cliSettings`);
+        let jsonString = localStorage.getItem(`${this.terminal.terminal.localStoragePrefix}--cliSettings`);
         let tmpSettings = JSON.parse(jsonString) ;
         if( tmpSettings ) {
             this.settings = tmpSettings;
