@@ -491,7 +491,19 @@ class ChromeCommands {
                     tab = tab[0] ;
                 }
 
-                await this.#createBookmark(tab.title, tab.url, this.path.id) ;
+                let bookmark = await this.#createBookmark(tab.title, tab.url, this.path.id) ;
+
+                this.bookmarks.push({
+                    title: bookmark.title,
+                    id: bookmark.id,
+                    parentId: bookmark.parentId,
+                    index: bookmark.index,
+                    dateAdded: bookmark.dateAdded,
+                    dateGroupModified: bookmark.dateGroupModified,
+                    url: bookmark.url,
+                    type: "bookmark"
+                }) ;
+
                 this.terminal.terminal.status = 0 ;
                 await this.terminal.println( `Bookmark saved as ${tab.title}.` ) ;
                 return result ;
