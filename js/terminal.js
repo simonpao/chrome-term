@@ -81,7 +81,8 @@ class ChromeTerminal {
         try {
             let jsTerminalDisplayJson = localStorage.getItem(`${this.terminal.localStoragePrefix}--display`);
             let tmpDisplay = JSON.parse(jsTerminalDisplayJson) ;
-            if( tmpDisplay.display && tmpDisplay.x && tmpDisplay.y && tmpDisplay.in ) {
+            if( tmpDisplay.display && typeof tmpDisplay.x === "number" &&
+                typeof tmpDisplay.y === "number" && tmpDisplay.in ) {
                 this.clr() ;
                 this.terminal.display = tmpDisplay.display ;
                 this.terminal.x = tmpDisplay.x ;
@@ -431,6 +432,7 @@ class ChromeTerminal {
     }
 
     async setLocalStorage() {
+        this.terminal.program.suppressOutput = false ; // Make sure this is always false on save
         let jsonString = JSON.stringify(this.terminal.program) ;
         localStorage.setItem(`${this.terminal.localStoragePrefix}--programInput`, jsonString) ;
     }
