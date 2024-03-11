@@ -8,7 +8,7 @@ class ChromeCommands {
         edit:  ["--EDIT",  "EDIT",  "E"],
         save:  ["--SAVE",  "SAVE",  "S"],
         activate: ["--ACTIVATE", "ACTIVATE", "A"],
-        modifiers: ["A", "I", "L", "Q"]
+        modifiers: ["A", "I", "L", "R", "Q"]
     }
 
     path = { text:"/", id: "0", parentId: null } ;
@@ -489,6 +489,12 @@ class ChromeCommands {
                     if(!tab || !tab.length)
                         return await cmdErr( this.terminal, `Tab "${name}" not found.`, 1 ) ;
                     tab = tab[0] ;
+                }
+
+                // Remove query string params
+                if(flags.R && flags.Q) {
+                    let url = new URL(tab.url) ;
+                    tab.url = url.origin + url.pathname;
                 }
 
                 let bookmark = await this.#createBookmark(tab.title, tab.url, this.path.id) ;
