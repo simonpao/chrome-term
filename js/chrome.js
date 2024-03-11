@@ -8,7 +8,7 @@ class ChromeCommands {
         edit:  ["--EDIT",  "EDIT",  "E"],
         save:  ["--SAVE",  "SAVE",  "S"],
         activate: ["--ACTIVATE", "ACTIVATE", "A"],
-        modifiers: ["A", "F", "I", "L"]
+        modifiers: ["A", "I", "L", "Q"]
     }
 
     path = { text:"/", id: "0", parentId: null } ;
@@ -512,7 +512,28 @@ class ChromeCommands {
             }
         }
 
-        if(ChromeCommands.flags.info.includes(action)) {}
+        if(ChromeCommands.flags.info.includes(action)) {
+            if(!name)
+                return await cmdErr( this.terminal, `No bookmark specified.`, 1 ) ;
+            let bookmark ;
+            if(flags.I)
+                bookmark = this.#getItemById(name)[0] ;
+            else
+                bookmark = this.#getItemFromPath(name) ;
+
+            if(!bookmark)
+                return await cmdErr( this.terminal, `Bookmark "${name}" not found.`, 1 ) ;
+
+            result += `${padWithSpaces('id', 10)}: ${bookmark.id}\n` ;
+            result += `${padWithSpaces('parentId', 10)}: ${bookmark.parentId}\n` ;
+            result += `${padWithSpaces('title', 10)}: ${bookmark.title}\n` ;
+            result += `${padWithSpaces('url', 10)}: ${bookmark.url}\n` ;
+            result += `${padWithSpaces('dateAdded', 10)}: ${getFormattedDate(bookmark.dateAdded)}` ;
+
+            this.terminal.terminal.status = 0 ;
+            await this.terminal.println( result ) ;
+            return result ;
+        }
 
         if(ChromeCommands.flags.edit.includes(action)) {}
 
