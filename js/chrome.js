@@ -5,6 +5,8 @@ class ChromeCommands {
         new:   ["--NEW",   "NEW",   "N"],
         list:  ["--LIST",  "LIST",  "L", "LS"],
         info:  ["--INFO",  "INFO",  "I"],
+        edit:  ["--EDIT",  "EDIT",  "E"],
+        save:  ["--SAVE",  "SAVE",  "S"],
         activate: ["--ACTIVATE", "ACTIVATE", "A"],
         modifiers: ["A", "F", "I", "L"]
     }
@@ -15,7 +17,6 @@ class ChromeCommands {
     }
 
     constructor(terminal, bookmarks) {
-        this.unprocessed = bookmarks ;
         this.bookmarks = this.#processBookmarks(bookmarks) ;
         this.terminal = terminal ;
 
@@ -61,7 +62,7 @@ class ChromeCommands {
             help: "./man/chrome.json"
         });
         terminal.registerCmd("TAB", {
-            args: [ "action", "name (optional)" ],
+            args: [ "action", "[-i]", "[name (or id with -i flag)]" ],
             callback: this.tab.bind(this),
             ontab: this.tabTab.bind(this),
             help: "./man/chrome.json"
@@ -73,7 +74,7 @@ class ChromeCommands {
             help: "./man/chrome.json"
         });
         terminal.registerCmd("BOOKMARK", {
-            args: [ "action", "group-name" ],
+            args: [ "action", "[-i]", "[name (or id with -i flag)]" ],
             callback: this.bookmark.bind(this),
             ontab: this.bookmarkTab.bind(this),
             help: "./man/chrome.json"
@@ -469,10 +470,75 @@ class ChromeCommands {
         return "" ;
     }
 
-    async bookmark(args) {}
+    async bookmark(args) {
+        let action = args[1]?.toUpperCase() ;
+
+        let flags = {} ;
+        let startPath = 2 ;
+        if(isFlags(args[2])) {
+            flags = this.#parseFlags(args[2]) ;
+            startPath++ ;
+        }
+
+        let name = args.slice(startPath, args.length).join(" ") ;
+        let result = "" ;
+
+        if(ChromeCommands.flags.open.includes(action)) {
+            if(!name)
+                return await cmdErr( this.terminal, `No bookmark specified.`, 1 ) ;
+            let bookmark ;
+            if(flags.I)
+                bookmark = this.#getItemById(name)[0] ;
+            else
+                bookmark = this.#getItemFromPath(name) ;
+
+            if(!bookmark)
+                return await cmdErr( this.terminal, `Bookmark "${name}" not found.`, 1 ) ;
+            if(bookmark.type !== "bookmark")
+                return await cmdErr( this.terminal, `${name} is not a bookmark.`, 1 ) ;
+            result = bookmark.url ;
+            await this.#openNewTab(bookmark.url) ;
+            this.terminal.terminal.status = 0 ;
+            await this.terminal.println( `Bookmark opened in new tab.` ) ;
+            return result ;
+        }
+
+        if(ChromeCommands.flags.new.includes(action)) {}
+
+        if(ChromeCommands.flags.info.includes(action)) {}
+
+        if(ChromeCommands.flags.edit.includes(action)) {}
+
+    }
 
     async bookmarkTab(args) {
-        return "" ;
+        let action = args[1]?.toUpperCase() ;
+
+        let flags = {} ;
+        let startPath = 2 ;
+        if(isFlags(args[2])) {
+            flags = this.#parseFlags(args[2]) ;
+            startPath++ ;
+        }
+
+        if(ChromeCommands.flags.open.includes(action) ||
+           ChromeCommands.flags.info.includes(action) ||
+           ChromeCommands.flags.edit.includes(action)) {
+            if(flags.I) {
+                let begin = args.slice(0, startPath).join(" ") ;
+                let name = args.slice(startPath, args.length).join(" ") ;
+                let items = this.#filterItemsById(name) ;
+
+                if(items.length === 1)
+                    return begin + " " + items[0].id ;
+                if(items.length > 1) {
+                    await this.#printList(items, "id") ;
+                    return begin + " " + name ;
+                }
+            }
+            else
+                return await this.#insertCompletion(args, "dir", startPath) ;
+        }
     }
 
     async #printList(collection, attribute, printPrompt) {
