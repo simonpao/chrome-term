@@ -56,6 +56,7 @@ body.loading {
 #terminal-container #terminal-window .char-row .char-box {
     width: 12px;
     display: inline-block;
+    cursor: default;
 }
 
 #terminal-input {
