@@ -63,8 +63,8 @@ class ChromeCommands {
         });
         terminal.registerCmd("RM", {
             args: [ "source-bookmark", "destination-bookmark" ],
-            callback: this.mv.bind(this),
-            ontab: this.mvTab.bind(this),
+            callback: this.rm.bind(this),
+            ontab: this.rmTab.bind(this),
             help: "./man/chrome.json"
         });
         terminal.registerCmd("TAB", {
@@ -223,8 +223,9 @@ class ChromeCommands {
         return name ;
     }
 
-    async rmdir(args) {if(args.length < 2)
-        return await cmdErr( this.terminal, "Syntax error; rmdir requires a directory name.", 1 ) ;
+    async rmdir(args) {
+        if(args.length < 2)
+            return await cmdErr( this.terminal, "Syntax error; rmdir requires a directory name.", 1 ) ;
 
         let name = args.splice(1, args.length-1).join(" ") ;
 
@@ -239,6 +240,8 @@ class ChromeCommands {
                     if (!rmDir) {
                         return await cmdErr( this.terminal, "Directory not found.", 1 ) ;
                     } else {
+                        if(rmDir.type !== "dir")
+                            return await cmdErr( this.terminal, `${rmDir.title} is not a directory; rmdir aborted.`, 1 ) ;
                         let contents = this.#getDirContents(rmDir.id) ;
                         if(contents.length > 0)
                             return await cmdErr( this.terminal, "Directory is not empty; rmdir aborted.", 1 ) ;
@@ -260,13 +263,47 @@ class ChromeCommands {
     async cp(args) {}
 
     async cpTab(args) {
-        return await this.#insertCompletion(args, "bookmark") ;
+        return await this.#insertCompletion(args, "dir", args.length-1) ;
     }
 
     async mv(args) {}
 
     async mvTab(args) {
-        return await this.#insertCompletion(args, "bookmark") ;
+        return await this.#insertCompletion(args, "dir", args.length-1) ;
+    }
+
+    async rm(args) {
+        if(args.length < 2)
+            return await cmdErr( this.terminal, "Syntax error; rm requires a bookmark name.", 1 ) ;
+
+        let name = args.splice(1, args.length-1).join(" ") ;
+
+        switch(name) {
+            case ".":
+            case "~":
+            case "..":
+                return await cmdErr( this.terminal, "Syntax error; rm name is invalid.", 1 ) ;
+            default:
+                try {
+                    let rmBookmark = this.#getItemFromPath(name) ;
+                    if (!rmBookmark) {
+                        return await cmdErr( this.terminal, "Bookmark not found.", 1 ) ;
+                    } else {
+                        if(rmBookmark.type !== "bookmark")
+                            return await cmdErr( this.terminal, `${rmBookmark.title} is not a bookmark; rm aborted.`, 1 ) ;
+                        await this.#deleteFolder(rmBookmark.id) ;
+                    }
+                } catch(e) {
+                    return await cmdErr( this.terminal, "Runtime error; " + e, 1 ) ;
+                }
+        }
+
+        this.terminal.terminal.status = 0 ;
+        return name ;
+    }
+
+    async rmTab(args) {
+        return await this.#insertCompletion(args, "dir") ;
     }
 
     async tab(args) {
@@ -728,6 +765,19 @@ class ChromeCommands {
             }, newBookmark => {
                 resolve(newBookmark) ;
             });
+        }) ;
+    }
+
+    async #deleteBookmark(id) {
+        return new Promise((resolve, reject) => {
+            if(!id) {
+                reject("Error deleting bookmark") ;
+                return ;
+            }
+            chrome.bookmarks.remove(id, res => resolve(res));
+            this.bookmarks.splice(
+                this.bookmarks.findIndex( item => item.id === id ), 1
+            );
         }) ;
     }
 
