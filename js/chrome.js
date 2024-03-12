@@ -291,7 +291,7 @@ class ChromeCommands {
                     } else {
                         if(rmBookmark.type !== "bookmark")
                             return await cmdErr( this.terminal, `${rmBookmark.title} is not a bookmark; rm aborted.`, 1 ) ;
-                        await this.#deleteFolder(rmBookmark.id) ;
+                        await this.#deleteBookmark(rmBookmark.id) ;
                     }
                 } catch(e) {
                     return await cmdErr( this.terminal, "Runtime error; " + e, 1 ) ;
