@@ -4,7 +4,7 @@ const VAR_MODE_STRING = 2 ;
 const VAR_MODE_VAR    = 3 ;
 
 const flags = {
-    list:   ["--LIST",   "-L", "LIST",   "L", "LS"],
+    list:   ["--LIST",   "-L", "LIST",   "L"],
     recall: ["--RECALL", "-R", "RECALL", "R"],
     delete: ["--DELETE", "-D", "DELETE", "D"],
 }
@@ -541,38 +541,50 @@ async function saveCmd(args) {
 
 async function aliasCmd(args) {
     if(args.length >= 2) {
-        let flag = args[1].toUpperCase() ;
+        let flag = args[1]?.toUpperCase() ;
+        let name = args[2]?.toUpperCase() ;
 
         // Delete an alias
         if(flags.delete.includes(flag)) {
-            delete this.terminal.program.aliases[args[2].toUpperCase()] ;
-            await this.setLocalStorage() ;
             this.terminal.status = 0 ;
+            if(!name)
+                return await this.println(`Alias name required.`) ;
+            let alias = this.terminal.program.aliases[name] ;
+            if(!alias)
+                return await this.println(`Alias ${args[2]} does not exist; nothing deleted.`) ;
+            delete this.terminal.program.aliases[name] ;
+            await this.setLocalStorage() ;
+            await this.println(`Alias ${name} deleted.`) ;
             return "" ;
         }
 
         // List an alias
         if(flags.list.includes(flag)) {
-            let alias = this.terminal.program.aliases[args[2].toUpperCase()] ;
+            this.terminal.status = 0 ;
+            if(!name)
+                return await this.println(`Alias name required.`) ;
+            let alias = this.terminal.program.aliases[name] ;
             let out = ""
             if(!alias)
-                await this.println(`Alias ${args[2]} does not exist.`) ;
+                return await this.println(`Alias ${args[2]} does not exist.`) ;
             else
                 out = await list(this, alias) ;
-            this.terminal.status = 0 ;
             await this.println( "End of Program." ) ;
             return out ;
         }
 
         // Recall an alias
         if(flags.recall.includes(flag)) {
-            let alias = this.terminal.program.aliases[args[2].toUpperCase()] ;
+            this.terminal.status = 0 ;
+            if(!name)
+                return await this.println(`Alias name required.`) ;
+            let alias = this.terminal.program.aliases[name] ;
             if(!alias)
-                await this.println(`Alias ${args[2]} does not exist; nothing recalled.`) ;
+                return await this.println(`Alias ${args[2]} does not exist; nothing recalled.`) ;
             else
                 this.terminal.program.input = this.terminal.program.aliases[args[2].toUpperCase()] ;
             await this.setLocalStorage() ;
-            this.terminal.status = 0 ;
+            await this.println(`Alias ${name} recalled.`) ;
             return "" ;
         }
 
