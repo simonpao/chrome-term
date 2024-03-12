@@ -98,14 +98,14 @@ class ChromeCommands {
             case ".":
                 return ;
             case "~":
-                dir = this.#getItemById( "0" )[0] ;
+                dir = this.#getItemById( "0" ) ;
                 if(!dir)
                     return await cmdErr( this.terminal, `Directory ${name} not found.`, 1 ) ;
                 break ;
             case "..":
                 if(!this.path.parentId)
                     return await cmdErr( this.terminal, "Cannot move out of root directory.", 1 ) ;
-                dir = this.#getItemById( this.path.parentId )[0] ;
+                dir = this.#getItemById( this.path.parentId ) ;
                 if(!dir)
                     return await cmdErr( this.terminal, `Directory ${name} not found.`, 1 ) ;
                 break ;
@@ -287,7 +287,7 @@ class ChromeCommands {
                 return await cmdErr( this.terminal, `No bookmark specified.`, 1 ) ;
             let bookmark ;
             if(flags.I)
-                bookmark = this.#getItemById(name)[0] ;
+                bookmark = this.#getItemById(name) ;
             else
                 bookmark = this.#getItemFromPath(name) ;
 
@@ -486,7 +486,7 @@ class ChromeCommands {
                 return await cmdErr( this.terminal, `No bookmark specified.`, 1 ) ;
             let bookmark ;
             if(flags.I)
-                bookmark = this.#getItemById(name)[0] ;
+                bookmark = this.#getItemById(name) ;
             else
                 bookmark = this.#getItemFromPath(name) ;
 
@@ -554,7 +554,7 @@ class ChromeCommands {
                 return await cmdErr( this.terminal, `No bookmark specified.`, 1 ) ;
             let bookmark ;
             if(flags.I)
-                bookmark = this.#getItemById(name)[0] ;
+                bookmark = this.#getItemById(name) ;
             else
                 bookmark = this.#getItemFromPath(name) ;
 
@@ -606,29 +606,41 @@ class ChromeCommands {
         return await printList(this.terminal, collection, attribute, printPrompt) ;
     }
 
+    // Tab completion
     async #insertCompletion(args, type, start = 1) {
         let begin = args.slice(0, start).join(" ") ;
         let name = args.slice(start, args.length).join(" ") ;
-        let item = this.#getItemByPartialName(name, this.path.id, type ) ;
+        let item = this.#getItemByPartialName(name, this.path.id ) ;
         let path = item[0]?.title || "" ;
 
         if(item.length === 0 && type === "dir") {
             let nameParts = name.split("/") ;
             let id = this.path.id ;
+            let parentId = this.path.parentId ;
             let save = "" ;
             for(let i in nameParts) if(nameParts.hasOwnProperty(i)) {
                 let part = nameParts[i] ;
 
                 if(parseInt(i)+1 === nameParts.length)
                     item = this.#getItemByPartialName((save !== "" ? save : part), id ) ;
-                else
-                    item = this.#getItemByName((save !== "" ? save + part : part), id ) ;
+                else {
+                    if(this.#isSpecialPathPart(part)) {
+                        item = this.#parseSpecialPathParts(part, id, parentId) ;
+                        id = item?.id ;
+                        parentId = item?.parentId ;
+                        path += part + "/" ;
+                        continue ;
+                    }
+                    else
+                        item = this.#getItemByName((save !== "" ? save + part : part), id ) ;
+                }
 
                 if(!item || !item.length)
                     save += part + "/" ;
                 else {
                     save = "" ;
                     id = item[0]?.id ;
+                    parentId = item[0]?.parentId ;
                     path += item[0]?.title + "/" ;
                 }
             }
@@ -702,6 +714,7 @@ class ChromeCommands {
         return "" ;
     }
 
+    // Bookmark operations
     async #createBookmark(title, url, folderId) {
         return new Promise((resolve, reject) => {
             if(!folderId || !title || !url) {
@@ -749,6 +762,25 @@ class ChromeCommands {
         }) ;
     }
 
+    #parseSpecialPathParts(part, id, parentId) {
+        if(part === ".") {
+            return this.#getItemById(id) ;
+        }
+        if(part === "..") {
+            return this.#getItemById(parentId) ;
+        }
+        if(part === "~") {
+            let item = {};
+            item.id = "0" ;
+            item.parentId = null ;
+            return item
+        }
+    }
+
+    #isSpecialPathPart(part) {
+        return [".", "..", "~"].includes(part) ;
+    }
+
     #getItemFromPath(path) {
         if(path.endsWith("/"))
             path = path.slice(0, path.length-1) ;
@@ -756,13 +788,21 @@ class ChromeCommands {
         if(!item) {
             let pathParts = path.split("/") ;
             let id = this.path.id ;
+            let parentId = this.path.parentId ;
             let save = "" ;
             for(let part of pathParts) {
+                if(this.#isSpecialPathPart(part)) {
+                    item = this.#parseSpecialPathParts(part, id, parentId) ;
+                    id = item?.id ;
+                    parentId = item?.parentId ;
+                    continue ;
+                }
                 item = this.#getItemByName((save !== "" ? save + part : part), id )[0] ;
                 if(!item) save += part + "/" ;
                 else {
                     save = "" ;
                     id = item?.id ;
+                    parentId = item?.parentId ;
                 }
             }
         }
@@ -872,7 +912,7 @@ class ChromeCommands {
     }
 
     #getItemById(id) {
-        return this.bookmarks.filter(item => item.id === id) ;
+        return this.bookmarks.filter(item => item.id === id)[0] ;
     }
 
     #filterItemsById(id) {
@@ -905,7 +945,7 @@ class ChromeCommands {
         let path = "" ;
         let id = this.path.id ;
         do {
-            let item = this.#getItemById(id)[0] ;
+            let item = this.#getItemById(id) ;
             path = item.title + "/" + path ;
             id = item?.parentId || false ;
         } while(id)
