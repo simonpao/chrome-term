@@ -3,6 +3,12 @@ const VAR_MODE_EXPR   = 1 ;
 const VAR_MODE_STRING = 2 ;
 const VAR_MODE_VAR    = 3 ;
 
+const flags = {
+    list:   ["--LIST",   "-L", "LIST",   "L", "LS"],
+    recall: ["--RECALL", "-R", "RECALL", "R"],
+    delete: ["--DELETE", "-D", "DELETE", "D"],
+}
+
 function registerDefaultCommands(terminal) {
     terminal.registerCmd( "ADD", {
         args: [ "addend", "addend" ],
@@ -535,8 +541,10 @@ async function saveCmd(args) {
 
 async function aliasCmd(args) {
     if(args.length >= 2) {
+        let flag = args[1].toUpperCase() ;
+
         // Delete an alias
-        if(args[1].toUpperCase() === "-D") {
+        if(flags.delete.includes(flag)) {
             delete this.terminal.program.aliases[args[2].toUpperCase()] ;
             await this.setLocalStorage() ;
             this.terminal.status = 0 ;
@@ -544,7 +552,7 @@ async function aliasCmd(args) {
         }
 
         // List an alias
-        if(args[1].toUpperCase() === "-L") {
+        if(flags.list.includes(flag)) {
             let alias = this.terminal.program.aliases[args[2].toUpperCase()] ;
             let out = ""
             if(!alias)
@@ -557,7 +565,7 @@ async function aliasCmd(args) {
         }
 
         // Recall an alias
-        if(args[1].toUpperCase() === "-R") {
+        if(flags.recall.includes(flag)) {
             let alias = this.terminal.program.aliases[args[2].toUpperCase()] ;
             if(!alias)
                 await this.println(`Alias ${args[2]} does not exist; nothing recalled.`) ;
