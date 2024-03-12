@@ -319,7 +319,23 @@ class ChromeCommands {
         }
 
         if(ChromeCommands.flags.new.includes(action)) {
-            await this.#openNewTab(null) ;
+            if(!name) {
+                let tab = await this.#openNewTab(null) ;
+                await this.terminal.println( `New tab opened with ID ${tab.id}.` ) ;
+                return tab.id ;
+            }
+            else {
+                if(!name?.startsWith("http"))
+                    name = "https://" + name ;
+                try {
+                    let url = new URL(name) ;
+                    let tab = await this.#openNewTab(url.toString()) ;
+                    await this.terminal.println( `${url.toString()} opened with ID ${tab.id}.` ) ;
+                    return tab.id ;
+                } catch(e) {
+                    return await cmdErr( this.terminal, `Invalid URL specified.`, 1 ) ;
+                }
+            }
         }
 
         if(ChromeCommands.flags.list.includes(action)) {
@@ -803,7 +819,7 @@ class ChromeCommands {
                         await chrome.tabs.group({ groupId: tabGroup[0].id, tabIds: tab.id });
                     }
                 }
-                resolve() ;
+                resolve(tab) ;
             }) ;
         }) ;
     }
