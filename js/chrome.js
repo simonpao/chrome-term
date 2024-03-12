@@ -61,6 +61,12 @@ class ChromeCommands {
             ontab: this.mvTab.bind(this),
             help: "./man/chrome.json"
         });
+        terminal.registerCmd("RM", {
+            args: [ "source-bookmark", "destination-bookmark" ],
+            callback: this.mv.bind(this),
+            ontab: this.mvTab.bind(this),
+            help: "./man/chrome.json"
+        });
         terminal.registerCmd("TAB", {
             args: [ "action", "[-i]", "[name (or id with -i flag)]" ],
             callback: this.tab.bind(this),
@@ -226,12 +232,14 @@ class ChromeCommands {
                 return await cmdErr( this.terminal, "Syntax error; rmdir name is invalid.", 1 ) ;
             default:
                 try {
-                    let rmDir = await this.#getItemByName(name, this.path.id) ;
-                    if(rmDir.length > 1) {
-                        await this.#printList(rmDir, "title", false);
-                        return await cmdErr( this.terminal, "Multiple directories; rmdir aborted.", 1 ) ;
+                    let rmDir = this.#getItemFromPath(name) ;
+                    if (!rmDir) {
+                        return await cmdErr( this.terminal, "Directory not found.", 1 ) ;
                     } else {
-                        await this.#deleteFolder(rmDir[0].id) ;
+                        let contents = this.#getDirContents(rmDir.id) ;
+                        if(contents.length > 0)
+                            return await cmdErr( this.terminal, "Directory is not empty; rmdir aborted.", 1 ) ;
+                        await this.#deleteFolder(rmDir.id) ;
                     }
                 } catch(e) {
                     return await cmdErr( this.terminal, "Runtime error; " + e, 1 ) ;
