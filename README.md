@@ -32,19 +32,23 @@ Examples include:
        - Remove query params before saving
      - `bookmark new -i 1652151025`
        - Save new bookmark from tab ID
-   - view existing bookmarks in current folder (see below)
+   - view existing bookmarks in current folder
      - `cd Bookmark bar/`
      - `ls -al`
-   - delete a bookmark (not implemented yet)
+   - delete a bookmark
+     - `rm Google`
    - view details about a bookmark
      - `bookmark info Google`
      - `bookmark info -i 65`
 
 Directory structure will be based on bookmark directories.
  - `cd` to move into folders
+   - `cd Bookmarks bar/Folder`
+   - `cd ~/Other bookmarks`
+   - `cd ../Bookmarks bar/Folder`
  - `ls` to view folder contents
  - `mkdir` to create new folders
  - `rmdir` to delete a folder
  - `cp` to copy (not implemented yet)
  - `mv` to move (not implemented yet)
- - `rm` to remove (not implemented yet)
+ - `rm` to remove
