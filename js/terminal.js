@@ -106,6 +106,7 @@ class ChromeTerminal {
         let x = this.terminal.x ;
         let y = this.terminal.y ;
 
+
         if(x === 0) {
             if(y === 0) return false ;
             y-- ;
@@ -116,6 +117,7 @@ class ChromeTerminal {
         if(this.terminal.display.data[y][x].char === "\u0000")
             return false ;
 
+        this.terminal.display.data[y][x].char = "&nbsp;" ;
         this.terminal.x = x ;
         this.terminal.y = y ;
         return true ;
@@ -140,7 +142,9 @@ class ChromeTerminal {
         $(".char-box").text("") ;
         for(let y in this.terminal.display.data) {
             for(let x in this.terminal.display.data[y]) {
-                this.terminal.display.data[y][x] = { char: "&nbsp;", color: this.terminal.display.color } ;
+                this.terminal.display.data[y][x] = new TerminalCharacter(
+                    "&nbsp;", this.terminal.display.color
+                ) ;
             }
         }
     }
@@ -198,18 +202,16 @@ class ChromeTerminal {
                     this.insertNewLine() ;
                     break ;
                 case " ":
-                    this.terminal.display.data[this.terminal.y][this.terminal.x] = {
-                        char: "&nbsp;",
-                        color: color
-                    } ;
+                    this.terminal.display.data[this.terminal.y][this.terminal.x] = new TerminalCharacter(
+                        "&nbsp;", color
+                    ) ;
                     $charBox.html("&nbsp;") ;
                     await this.incrementCharPos(timeout) ;
                     break ;
                 default:
-                    this.terminal.display.data[this.terminal.y][this.terminal.x] = {
-                        char: chars[c],
-                        color: color
-                    } ;
+                    this.terminal.display.data[this.terminal.y][this.terminal.x] = new TerminalCharacter(
+                        chars[c], color
+                    ) ;
                     $charBox.html($(`<span style='color: var(${'--'+color});'></span>`).text(chars[c])) ;
                     await this.incrementCharPos(timeout) ;
                     break ;
@@ -475,5 +477,12 @@ class ChromeTerminal {
         if( !this.terminal.debugMode ) return ;
         $("#debug-output").prepend( msg + "\n" );
         console.debug(msg) ;
+    }
+}
+
+class TerminalCharacter {
+    constructor(char, color) {
+        this.char = char ;
+        this.color = color ;
     }
 }
