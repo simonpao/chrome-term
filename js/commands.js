@@ -692,7 +692,9 @@ async function systemCmd(args) {
     let out = "" ;
     switch(args[1]?.toUpperCase()) {
         case "LIST":
-            out = "ROWS, COLS, X, Y, STATUS, DEBUG, PROMPT" ; break ;
+            out = "ROWS,COLS,X,Y,STATUS,DEBUG,PROMPT,COLOR,VERSION" ;
+            await printList( this, out.split(","), "", false ) ;
+            return out ;
         case "ROWS":
             out = this.terminal.rows ; break ;
         case "COLS":
@@ -709,6 +711,10 @@ async function systemCmd(args) {
             out = this.terminal.display.prompt ; break ;
         case "COLOR":
             out = this.terminal.display.color.toUpperCase() ; break ;
+        case "VERSION":
+            let manifest = await $.getJSON("./manifest.json") ;
+            out = `${manifest.name} - version ${manifest.version}\n  ${manifest.description}` ;
+            break ;
         default:
             return await cmdErr( this,  "Invalid SYSTEM parameter: " + args[1] + ".", 1 ) ;
     }
