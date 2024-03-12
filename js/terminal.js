@@ -360,6 +360,7 @@ class ChromeTerminal {
                 if( typeof this.terminal.registeredCmd[cmd]?.ontab !== "undefined" ) {
                     result = await this.terminal.registeredCmd[cmd].ontab(args, userIn, keyCode) ;
                     if(typeof result === "string" && result !== "") {
+                        this.insertCarrot("") ;
                         userIn.splice( 0, userIn.length ) ;
                         userIn.push(...result.split("")) ;
                         this.setCharPos(this.terminal.in.x, this.terminal.in.y) ;
