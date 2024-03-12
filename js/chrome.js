@@ -201,6 +201,9 @@ class ChromeCommands {
                 return await cmdErr( this.terminal, "Syntax error; mkdir name is invalid.", 1 ) ;
             default:
                 try {
+                    let check = this.#getItemByName(name, this.path.id);
+                    if(check.length)
+                        return await cmdErr( this.terminal, "A directory with this name already exists.", 1 ) ;
                     let newDir = await this.#createFolder(name, this.path.id);
                     this.bookmarks.push({
                         title: newDir.title,
@@ -520,6 +523,10 @@ class ChromeCommands {
                     let url = new URL(tab.url) ;
                     tab.url = url.origin + url.pathname;
                 }
+
+                let check = this.#getItemByName(tab.title, this.path.id);
+                if(check.length)
+                    return await cmdErr( this.terminal, "A bookmark with this name already exists in this directory.", 1 ) ;
 
                 let bookmark = await this.#createBookmark(tab.title, tab.url, this.path.id) ;
 
