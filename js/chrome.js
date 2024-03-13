@@ -31,6 +31,7 @@ class ChromeCommands {
         });
         terminal.registerCmd("LS", {
             callback: this.ls.bind(this),
+            ontab: this.lsTab.bind(this),
             help: "./man/chrome.json"
         });
         terminal.registerCmd("SU", {
@@ -132,10 +133,23 @@ class ChromeCommands {
     }
 
     async ls(args) {
-        let dirs = this.#getDirContents(this.path.id);
         let flags = {} ;
-        if(isFlags(args[1]))
+        let startPos = 1 ;
+        if(isFlags(args[1])) {
             flags = this.#parseFlags(args[1]) ;
+            startPos ++ ;
+        }
+
+        let name = args.splice(startPos, args.length-1).join(" ") ;
+        let id = this.path.id ;
+        let partial = null ;
+        if(name) {
+            let item = this.#getItemFromPath(name) ;
+            if(item) id = item.id ;
+            else partial = name ;
+        }
+
+        let dirs = this.#getDirContents(id, partial);
 
         if(flags.A) {
             if(this.path.parentId) {
@@ -181,6 +195,13 @@ class ChromeCommands {
             this.terminal.terminal.status = 0;
             return out;
         }
+    }
+
+    async lsTab(args) {
+        let startPos = 1 ;
+        if(isFlags(args[1]))
+            startPos ++ ;
+        return await this.#insertCompletion(args, "dir", startPos) ;
     }
 
     async su(args) {
@@ -267,13 +288,19 @@ class ChromeCommands {
     async cp(args) {}
 
     async cpTab(args) {
-        return await this.#insertCompletion(args, "dir", args.length-1) ;
+        let startPos = 1 ;
+        if(isFlags(args[1]))
+            startPos ++ ;
+        return await this.#insertCompletion(args, "dir", startPos) ;
     }
 
     async mv(args) {}
 
     async mvTab(args) {
-        return await this.#insertCompletion(args, "dir", args.length-1) ;
+        let startPos = 1 ;
+        if(isFlags(args[1]))
+            startPos ++ ;
+        return await this.#insertCompletion(args, "dir", startPos) ;
     }
 
     async rm(args) {
@@ -961,7 +988,13 @@ class ChromeCommands {
     }
 
     // Utility functions
-    #getDirContents(parentId) {
+    #getDirContents(parentId, partial = null) {
+        if(partial !== null)
+            return this.bookmarks.filter(
+                item =>
+                    item.title?.toLowerCase()?.startsWith(partial?.toLowerCase()) &&
+                    item.parentId === parentId
+            ) ;
         return this.bookmarks.filter(item => item.parentId === parentId) ;
     }
 
