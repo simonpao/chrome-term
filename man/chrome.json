@@ -1,6 +1,6 @@
 {
-  "CD": "Enter specified folder",
-  "LS": "List contents of current bookmark folder",
+  "CD": "Enter specified folder\nFor example:\n - cd Bookmarks bar/Folder\n - cd ~/Other bookmarks\n - cd ../Bookmarks bar/Folder",
+  "LS": "List contents of current bookmark folder\nFor example:\n - ls -al\n - ls Bookmarks bar/\n - ls book",
   "SU": "Change username",
   "MKDIR": "Create a new folder",
   "RMDIR": "Delete a specified folder",
@@ -8,5 +8,6 @@
   "MV": "Move a bookmark",
   "TAB": "Manage Chrome tabs\nAvailable actions are:\n - OPEN\n - CLOSE\n - NEW\n - LIST\n - INFO\n - ACTIVATE\nFor example:\n - tab open Bookmark name\n - tab list\n - tab info",
   "TABGROUP": "Manage tab groups",
-  "BOOKMARK": "Manage bookmarks\nAvailable actions are:\n - OPEN\n - NEW\n - INFO\n - EDIT"
+  "BOOKMARK": "Manage bookmarks\nAvailable actions are:\n - OPEN\n - NEW\n - INFO\n - EDIT",
+  "HISTORY": "Manage browsing history"
 }

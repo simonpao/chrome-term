@@ -23,6 +23,7 @@
   "permissions": [
     "bookmarks",
     "tabGroups",
-    "tabs"
+    "tabs",
+    "history"
   ]
 }

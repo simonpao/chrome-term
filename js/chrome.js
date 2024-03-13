@@ -86,6 +86,12 @@ class ChromeCommands {
             ontab: this.bookmarkTab.bind(this),
             help: "./man/chrome.json"
         });
+        terminal.registerCmd("HISTORY", {
+            args: [ "action", "[-i]", "[name (or id with -i flag)]" ],
+            callback: this.history.bind(this),
+            ontab: this.historyTab.bind(this),
+            help: "./man/chrome.json"
+        });
     }
 
     async cd(args) {
@@ -670,6 +676,42 @@ class ChromeCommands {
         return "" ;
     }
 
+    async history(args) {
+        let action = args[1]?.toUpperCase() ;
+
+        let flags = {} ;
+        let startIndex = 2 ;
+        if(isFlags(args[2])) {
+            flags = this.#parseFlags(args[2]) ;
+            startIndex++ ;
+        }
+
+        let name = args.slice(startIndex, args.length).join(" ") ;
+        let result = "" ;
+
+        if(ChromeCommands.flags.list.includes(action)) {
+            let history = await this.#getRecentHistory() ;
+            let out = "" ;
+            out += "ID     DATE        TIME   VISITS TITLE" ;
+            await this.terminal.println(out) ;
+
+            for(let item of history) {
+                let tmp = padWithSpaces( item.id?.toString() || "-", 6) ;
+                tmp += " " + padWithSpaces( getFormattedDate(item.lastVisitTime), 18) ;
+                tmp += " " + padWithSpaces( item.visitCount?.toString(), 6) ;
+                tmp += " " + padWithSpaces( item.title, this.terminal.terminal.columns-36 ) ;
+
+                out += tmp + "\n" ;
+                await this.terminal.println(tmp, 0) ;
+            }
+
+            this.terminal.terminal.status = 0;
+            return out;
+        }
+    }
+
+    async historyTab(args) {}
+
     async #printList(collection, attribute, printPrompt) {
         return await printList(this.terminal, collection, attribute, printPrompt) ;
     }
@@ -984,6 +1026,22 @@ class ChromeCommands {
                 }, res => {
                     resolve(res) ;
                 })
+        }) ;
+    }
+
+    // History operations
+    async #getRecentHistory(text = "", limit = 15) {
+        return new Promise((resolve, reject) => {
+            try {
+                chrome.history.search({
+                    text: text,
+                    maxResults: limit
+                }, (history) => {
+                    resolve(history) ;
+                }) ;
+            } catch(e) {
+                reject(e) ;
+            }
         }) ;
     }
 

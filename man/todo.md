@@ -1,6 +1,6 @@
 # chrome-term todo:
- - On `ls -al`, make `id` and `parent` of `".."` the parent dir's and `id` and `parent` of `"."` the current dir's
- - Filter `tab ls` and `ls` by partial name
+ - On `ls -al`, make `id` and `parent` of `".."` the parent dir's and `id` and `parent` of `"."` the current dir's (done)
+ - Filter `tab ls` and `ls` by partial name (done)
  - Implement `mv` command
     - If last element of path is an existing directory, move bookmark into directory with current name
     - If last element of path is an existing bookmark, display error unless `-f` option passed
