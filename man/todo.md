@@ -25,6 +25,6 @@
  - Implement `history` command
     - `reopen` most recently closed tab
         - or `reopen` by name or id
-    - `list` recent history
+    - `list` recent history (done)
         - or specify options to list history from certain date or time
  - Implement `bookmark edit` using similar logic as `simonedit`

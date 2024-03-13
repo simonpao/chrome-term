@@ -690,7 +690,19 @@ class ChromeCommands {
         let result = "" ;
 
         if(ChromeCommands.flags.list.includes(action)) {
-            let history = await this.#getRecentHistory() ;
+            let text = "" ;
+            if(name)
+                text = name ;
+
+            let history = await this.#getRecentHistory(text) ;
+            if(!history || !history?.length) {
+                let out = "No recent history found" ;
+                if(name) out += " that matches query" ;
+                await this.terminal.println(out) ;
+                this.terminal.terminal.status = 0;
+                return out;
+            }
+
             let out = "" ;
             out += "ID     DATE        TIME   VISITS TITLE" ;
             await this.terminal.println(out) ;

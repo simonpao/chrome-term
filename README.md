@@ -40,6 +40,10 @@ Examples include:
    - view details about a bookmark
      - `bookmark info Google`
      - `bookmark info -i 65`
+ - `history`
+   - list recent history
+     - `history ls`
+     - `history ls google`
 
 Directory structure will be based on bookmark directories.
  - `cd` to move into folders
