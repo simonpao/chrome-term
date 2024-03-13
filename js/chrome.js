@@ -138,18 +138,22 @@ class ChromeCommands {
             flags = this.#parseFlags(args[1]) ;
 
         if(flags.A) {
-            dirs.splice( 0, 0, {
-                "title": "..",
-                "id": "",
-                "parentId": "",
-                "dateAdded": 0,
-                "type": "dir"
-            }) ;
+            if(this.path.parentId) {
+                let parent = this.#getItemById(this.path.parentId) ;
+                dirs.splice( 0, 0, {
+                    "title": "..",
+                    "id": parent.id,
+                    "parentId": parent.parentId,
+                    "dateAdded": parent.dateAdded,
+                    "type": "dir"
+                }) ;
+            }
+            let thisItem = this.#getItemById(this.path.id) ;
             dirs.splice( 0, 0, {
                 "title": ".",
-                "id": "",
-                "parentId": "",
-                "dateAdded": 0,
+                "id": thisItem.id,
+                "parentId": thisItem.parentId,
+                "dateAdded": thisItem.dateAdded,
                 "type": "dir"
             }) ;
         }
@@ -165,8 +169,8 @@ class ChromeCommands {
 
             for(let dir of dirs) {
                 let tmp = dir.type === "dir" ? "d" : "-" ;
-                tmp += " " + padWithSpaces( dir.id.toString(), 5) ;
-                tmp += " " + padWithSpaces( dir.parentId.toString(), 6) ;
+                tmp += " " + padWithSpaces( dir.id?.toString() || "-", 5) ;
+                tmp += " " + padWithSpaces( dir.parentId?.toString() || "-", 6) ;
                 tmp += " " + padWithSpaces( getFormattedDate(dir.dateAdded), 18) ;
                 tmp += " " + padWithSpaces( dir.title, this.terminal.terminal.columns-36 ) ;
 
