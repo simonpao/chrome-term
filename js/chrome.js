@@ -8,7 +8,7 @@ class ChromeCommands {
         edit:  ["--EDIT",  "EDIT",  "E"],
         save:  ["--SAVE",  "SAVE",  "S"],
         activate: ["--ACTIVATE", "ACTIVATE", "A"],
-        modifiers: ["A", "D", "I", "L", "R", "Q"]
+        modifiers: ["A", "D", "I", "L", "Q", "R", "S"]
     }
 
     path = { text:"/", id: "0", parentId: null } ;
@@ -94,7 +94,7 @@ class ChromeCommands {
             help: "./man/chrome.json"
         });
         terminal.registerCmd("REOPEN", {
-            args: [ "action", "[-i]", "[name (or id with -i flag)]" ],
+            args: [ "action", "[-is]", "[name (or id with -i flag)]" ],
             callback: this.reopen.bind(this),
             ontab: this.reopenTab.bind(this),
             help: "./man/chrome.json"
@@ -747,40 +747,81 @@ class ChromeCommands {
     async historyTab(args) {}
 
     async reopen(args) {
-        let action = args[1]?.toUpperCase() ;
+        let action = "" ;
+        let startIndex = 1 ;
+        if(this.#isChromeAction(args[1]?.toUpperCase())) {
+            action = args[1]?.toUpperCase() ;
+            startIndex++ ;
+        }
 
         let flags = {} ;
-        let startIndex = 2 ;
-        if(isFlags(args[2])) {
-            flags = this.#parseFlags(args[2]) ;
+        if(isFlags(args[startIndex])) {
+            flags = this.#parseFlags(args[startIndex]) ;
             startIndex++ ;
         }
 
         let name = args.slice(startIndex, args.length).join(" ") ;
-        let result = "" ;
 
         if(ChromeCommands.flags.list.includes(action)) {
+            let recents = await this.#getRecentlyClosed() ;
+            let out = "" ;
 
+            if(!recents || !recents?.length) {
+                out = "No recent history found" ;
+                await this.terminal.println(out) ;
+                this.terminal.terminal.status = 0;
+                return out;
+            }
+
+            out += "ID           DATE        TIME    TITLE" ;
+            await this.terminal.println(out) ;
+
+            let max = 20 ;
+            for(let item of recents) {
+                let sessionItems = item.hasOwnProperty("tab") ? [ item.tab ] : item.window.tabs ;
+
+                for(let sessItem of sessionItems) {
+                    max-- ;
+                    let tmp = padWithSpaces( sessItem.sessionId?.toString() || "-", 12) ;
+                    tmp += " " + padWithSpaces( getFormattedDate(item.lastModified*1000), 18) ;
+                    tmp += " " + padWithSpaces( sessItem.title, this.terminal.terminal.columns-34 ) ;
+                    out += tmp + "\n" ;
+                    await this.terminal.println(tmp, 0) ;
+                    if(max <= 0) break ;
+                }
+                if(max <= 0) break ;
+            }
+
+            this.terminal.terminal.status = 0;
+            return out;
         }
 
         if(ChromeCommands.flags.open.includes(action) || !action) {
             let out ;
             if(name) {
-                /*
-                let text = "" ;
-                let history = await this.#getRecentHistory(text, 1) ;
+                if(!flags.S && flags.I) {
+                    await this.terminal.printPrompt(this.terminal.terminal.display.prompt);
+                    await this.#openRecentlyClosed(flags.S, name) ;
+                }
 
-                if(!history || !history?.length) {
-                    out = "No recent history found" ;
+                let recents = await this.#getRecentlyClosed() ;
+
+                if(!recents || !recents?.length) {
+                    out = "No recently closed tabs found" ;
                     await this.terminal.println(out) ;
                 } else {
-                    out = history.url ;
-                    await this.#openNewTab(history[0].url) ;
-                    await this.terminal.println( `${history[0].title} opened in new tab.` ) ;
+                    let sessionItems = this.#normalizeRecentlyClosed(recents) ;
+                    let item = sessionItems.filter(item => flags.I ? item.sessionId === name : item.title === name) ;
+                    if(!flags.S)
+                        await this.terminal.printPrompt(this.terminal.terminal.display.prompt) ;
+                    let restored = await this.#openRecentlyClosed(flags.S, item[0].sessionId) ;
+                    out = `${restored} opened in new tab.`
+                    await this.terminal.println( out ) ;
                 }
-                */
             } else {
-                let restored = await this.#openRecentlyClosed() ;
+                if(!flags.S)
+                    await this.terminal.printPrompt(this.terminal.terminal.display.prompt);
+                let restored = await this.#openRecentlyClosed(flags.S) ;
                 out = `${restored} opened in new tab.`
                 await this.terminal.println( out ) ;
             }
@@ -790,7 +831,26 @@ class ChromeCommands {
         }
     }
 
-    async reopenTab(args) {}
+    async reopenTab(args) {
+        let action = "" ;
+        let startIndex = 1 ;
+        if(this.#isChromeAction(args[1]?.toUpperCase())) {
+            action = args[1]?.toUpperCase() ;
+            startIndex++ ;
+        }
+
+        let flags = {} ;
+        if(isFlags(args[startIndex])) {
+            flags = this.#parseFlags(args[startIndex]) ;
+            startIndex++ ;
+        }
+
+        if(ChromeCommands.flags.open.includes(action) || !action) {
+            return await this.#insertSessionCompletion(args, startIndex, flags) ;
+        }
+
+        return "" ;
+    }
 
     async google(args) {}
 
@@ -903,6 +963,38 @@ class ChromeCommands {
                 return begin + " " + name ;
             }
             await this.#printList(tabs, attr) ;
+            return begin + " " + name ;
+        }
+        return "" ;
+    }
+
+    async #insertSessionCompletion(args, start = 1, flags = {}) {
+        let begin = args.slice(0, start).join(" ") ;
+        let name = args.slice(start, args.length).join(" ") ;
+
+        let recents = await this.#getRecentlyClosed() ;
+        let sessionItems = this.#normalizeRecentlyClosed(recents) ;
+        let session ;
+        if(flags.I)
+            session = sessionItems.filter(item =>
+                item.sessionId?.toString()?.startsWith(name)
+            ) ;
+        else
+            session = sessionItems.filter(item =>
+                item.title?.toLowerCase()?.startsWith(name.toLowerCase())
+            ) ;
+
+        let attr = flags.I ? "sessionId" : "title" ;
+        if(session.length === 1)
+            return begin + " " + session[0][attr] ;
+        if(session.length > 1) {
+            if(session.length > 100) {
+                await this.terminal.println(`\n${session.length} matches.`) ;
+                await this.terminal.printPrompt(this.terminal.terminal.display.prompt);
+                this.terminal.insertCarrot(this.terminal.terminal.display.carrot);
+                return begin + " " + name ;
+            }
+            await this.#printList(session, attr) ;
             return begin + " " + name ;
         }
         return "" ;
@@ -1130,6 +1222,16 @@ class ChromeCommands {
         }) ;
     }
 
+    #normalizeRecentlyClosed(recents) {
+        let sessionItems = [] ;
+        for(let item of recents) {
+            sessionItems.push(
+                ...(item.hasOwnProperty("tab") ? [ item.tab ] : item.window.tabs)
+            ) ;
+        }
+        return sessionItems ;
+    }
+
     async #getRecentlyClosed(limit = 25) {
         return new Promise((resolve, reject) => {
             try {
@@ -1144,20 +1246,28 @@ class ChromeCommands {
         }) ;
     }
 
-    async #openRecentlyClosed() {
+    async #openRecentlyClosed(silent = false, sessionId = null) {
         return new Promise((resolve, reject) => {
             try {
-                chrome.sessions.getRecentlyClosed({
-                    maxResults: 1
-                }, recent => {
-                    let url = recent[0].hasOwnProperty('tab') ? recent[0].tab.url :
-                        (recent[0].hasOwnProperty('window') ? recent[0].window.tabs[0].url : "") ;
-                    let title = recent[0].hasOwnProperty('tab') ? recent[0].tab.title :
-                        (recent[0].hasOwnProperty('window') ? recent[0].window.tabs[0].title : "") ;
-                    if(!url)
-                        reject("No recent tab found.") ;
-                    this.#openNewTab(url).then(() => resolve(title)) ;
-                }) ;
+                if(silent) {
+                    chrome.sessions.getRecentlyClosed({
+                        maxResults: 25
+                    }, recent => {
+                        if(sessionId)
+                            recent = recent.filter(item => item.sessionId === sessionId) ;
+                        let url = recent[0].hasOwnProperty('tab') ? recent[0].tab.url :
+                            (recent[0].hasOwnProperty('window') ? recent[0].window.tabs[0].url : "") ;
+                        let title = recent[0].hasOwnProperty('tab') ? recent[0].tab.title :
+                            (recent[0].hasOwnProperty('window') ? recent[0].window.tabs[0].title : "") ;
+                        if(!url)
+                            reject("No recent tab found.") ;
+                        this.#openNewTab(url).then(() => resolve(title)) ;
+                    }) ;
+                } else {
+                    chrome.sessions.restore(sessionId, restored => {
+                        resolve(restored.hasOwnProperty('tab') ? restored[0].tab.title : "window") ;
+                    }) ;
+                }
             } catch(e) {
                 reject(e) ;
             }
@@ -1287,5 +1397,14 @@ class ChromeCommands {
         }
 
         return opts ;
+    }
+
+    #isChromeAction(str) {
+        for(let action in ChromeCommands.flags) {
+            if(action === "modifiers") continue ;
+            if(ChromeCommands.flags[action].includes(str))
+                return true ;
+        }
+        return false ;
     }
 }

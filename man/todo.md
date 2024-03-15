@@ -1,6 +1,6 @@
 # chrome-term todo:
- - On `ls -al`, make `id` and `parent` of `".."` the parent dir's and `id` and `parent` of `"."` the current dir's (done)
- - Filter `tab ls` and `ls` by partial name (done)
+ - On `ls -al`, make `id` and `parent` of `".."` the parent dir's and `id` and `parent` of `"."` the current dir's **(done)**
+ - Filter `tab ls` and `ls` by partial name **(done)**
  - Implement `mv` command
     - If last element of path is an existing directory, move bookmark into directory with current name
     - If last element of path is an existing bookmark, display error unless `-f` option passed
@@ -22,17 +22,17 @@
     - `close` a tab group
     - `open` entire directory as a tab group, either named as directory or with custom name
     - `rename` a tab group 
- - Implement `history` command
-    - `list` recent history (done)
-        - or specify options to list history from certain date or time
+ - Implement `history` command **(done)**
+    - `list` recent history **(done)**
+        - or specify options to list history from certain date or time **(done)**
  - Implement `reopen` command
     - List recently closed tabs/windows
-       - `reopen ls`
+       - `reopen ls` **(done)**
        - `reopen ls google`
-    - Reopen recent tabs/windows
-       - `reopen`
-       - `reopen Google`
-       `reopen -i 123456`
+    - Reopen recent tabs/windows **(done)**
+       - `reopen` **(done)**
+       - `reopen Google` **(done)**
+       - `reopen -i 123456` **(done)**
  - Implement `bookmark edit` using similar logic as `simonedit`
  - Press `Up Arrow` to recall recent commands
  - Implement `google` command
