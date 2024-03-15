@@ -781,6 +781,15 @@ class ChromeCommands {
                 let sessionItems = item.hasOwnProperty("tab") ? [ item.tab ] : item.window.tabs ;
 
                 for(let sessItem of sessionItems) {
+                    if(name) {
+                        if(flags.I) {
+                            if (!sessItem.sessionId?.toString()?.startsWith(name))
+                                continue;
+                        } else {
+                            if (!sessItem.title?.toLowerCase()?.startsWith(name.toLowerCase()))
+                                continue;
+                        }
+                    }
                     max-- ;
                     let tmp = padWithSpaces( sessItem.sessionId?.toString() || "-", 12) ;
                     tmp += " " + padWithSpaces( getFormattedDate(item.lastModified*1000), 18) ;
@@ -845,7 +854,8 @@ class ChromeCommands {
             startIndex++ ;
         }
 
-        if(ChromeCommands.flags.open.includes(action) || !action) {
+        if(ChromeCommands.flags.list.includes(action) ||
+           ChromeCommands.flags.open.includes(action) || !action) {
             return await this.#insertSessionCompletion(args, startIndex, flags) ;
         }
 
