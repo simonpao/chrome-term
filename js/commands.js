@@ -1034,3 +1034,9 @@ function getFormattedDate(timestamp) {
     str += padWithZeros((date.getMinutes()).toString(), 2) + " " ;
     return str ;
 }
+
+function getMillisFromDateStr(dateStr) {
+    if(!dateStr.match(/^\d{4}-\d{2}-\d{2}( \d{2}:\d{2}(:\d{2})?)?$/))
+        throw "Date input must match the format YYYY-MM-DD [HH:MM[:SS]]" ;
+    return Date.parse(dateStr);
+}

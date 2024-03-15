@@ -44,6 +44,14 @@ Examples include:
    - list recent history
      - `history ls`
      - `history ls google`
+ - `reopen`
+   - List recently closed tabs/windows
+     - `reopen ls`
+     - `reopen ls google`
+   - Reopen recent tabs/windows
+     - `reopen`
+     - `reopen Google`
+     - `reopen -i 123456`
 
 Directory structure will be based on bookmark directories.
  - `cd` to move into folders

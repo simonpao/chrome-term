@@ -8,7 +8,7 @@ class ChromeCommands {
         edit:  ["--EDIT",  "EDIT",  "E"],
         save:  ["--SAVE",  "SAVE",  "S"],
         activate: ["--ACTIVATE", "ACTIVATE", "A"],
-        modifiers: ["A", "I", "L", "R", "Q"]
+        modifiers: ["A", "D", "I", "L", "R", "Q"]
     }
 
     path = { text:"/", id: "0", parentId: null } ;
@@ -30,6 +30,7 @@ class ChromeCommands {
             help: "./man/chrome.json"
         });
         terminal.registerCmd("LS", {
+            args: [ "[folder-name]" ],
             callback: this.ls.bind(this),
             ontab: this.lsTab.bind(this),
             help: "./man/chrome.json"
@@ -87,9 +88,21 @@ class ChromeCommands {
             help: "./man/chrome.json"
         });
         terminal.registerCmd("HISTORY", {
-            args: [ "action", "[-i]", "[name (or id with -i flag)]" ],
+            args: [ "action", "[-d]", "[YYYY-MM-DD HH:MM:SS]", "[name (or id with -i flag)]" ],
             callback: this.history.bind(this),
             ontab: this.historyTab.bind(this),
+            help: "./man/chrome.json"
+        });
+        terminal.registerCmd("REOPEN", {
+            args: [ "action", "[-i]", "[name (or id with -i flag)]" ],
+            callback: this.reopen.bind(this),
+            ontab: this.reopenTab.bind(this),
+            help: "./man/chrome.json"
+        });
+        terminal.registerCmd("GOOGLE", {
+            args: [ "search-term" ],
+            callback: this.google.bind(this),
+            ontab: this.googleTab.bind(this),
             help: "./man/chrome.json"
         });
     }
@@ -686,18 +699,27 @@ class ChromeCommands {
             startIndex++ ;
         }
 
+        let date = null ;
+        if(flags.D) {
+            try {
+                date = getMillisFromDateStr(args[3]) ;
+                startIndex++ ;
+            } catch(e) {
+                return await cmdErr( this.terminal, e, 1 ) ;
+            }
+        }
+
         let name = args.slice(startIndex, args.length).join(" ") ;
-        let result = "" ;
 
         if(ChromeCommands.flags.list.includes(action)) {
             let text = "" ;
             if(name)
                 text = name ;
 
-            let history = await this.#getRecentHistory(text) ;
+            let history = await this.#getRecentHistory(text, date) ;
             if(!history || !history?.length) {
                 let out = "No recent history found" ;
-                if(name) out += " that matches query" ;
+                if(date) out += ` that for time period ending ${getFormattedDate(date)}` ;
                 await this.terminal.println(out) ;
                 this.terminal.terminal.status = 0;
                 return out;
@@ -723,6 +745,56 @@ class ChromeCommands {
     }
 
     async historyTab(args) {}
+
+    async reopen(args) {
+        let action = args[1]?.toUpperCase() ;
+
+        let flags = {} ;
+        let startIndex = 2 ;
+        if(isFlags(args[2])) {
+            flags = this.#parseFlags(args[2]) ;
+            startIndex++ ;
+        }
+
+        let name = args.slice(startIndex, args.length).join(" ") ;
+        let result = "" ;
+
+        if(ChromeCommands.flags.list.includes(action)) {
+
+        }
+
+        if(ChromeCommands.flags.open.includes(action) || !action) {
+            let out ;
+            if(name) {
+                /*
+                let text = "" ;
+                let history = await this.#getRecentHistory(text, 1) ;
+
+                if(!history || !history?.length) {
+                    out = "No recent history found" ;
+                    await this.terminal.println(out) ;
+                } else {
+                    out = history.url ;
+                    await this.#openNewTab(history[0].url) ;
+                    await this.terminal.println( `${history[0].title} opened in new tab.` ) ;
+                }
+                */
+            } else {
+                let restored = await this.#openRecentlyClosed() ;
+                out = `${restored} opened in new tab.`
+                await this.terminal.println( out ) ;
+            }
+
+            this.terminal.terminal.status = 0;
+            return out;
+        }
+    }
+
+    async reopenTab(args) {}
+
+    async google(args) {}
+
+    async googleTab(args) {}
 
     async #printList(collection, attribute, printPrompt) {
         return await printList(this.terminal, collection, attribute, printPrompt) ;
@@ -1042,14 +1114,49 @@ class ChromeCommands {
     }
 
     // History operations
-    async #getRecentHistory(text = "", limit = 15) {
+    async #getRecentHistory(text = "", startTime = null, limit = 15) {
         return new Promise((resolve, reject) => {
             try {
                 chrome.history.search({
+                    startTime: startTime,
                     text: text,
                     maxResults: limit
                 }, (history) => {
                     resolve(history) ;
+                }) ;
+            } catch(e) {
+                reject(e) ;
+            }
+        }) ;
+    }
+
+    async #getRecentlyClosed(limit = 25) {
+        return new Promise((resolve, reject) => {
+            try {
+                chrome.sessions.getRecentlyClosed({
+                    maxResults: limit
+                }, recent => {
+                    resolve(recent) ;
+                }) ;
+            } catch(e) {
+                reject(e) ;
+            }
+        }) ;
+    }
+
+    async #openRecentlyClosed() {
+        return new Promise((resolve, reject) => {
+            try {
+                chrome.sessions.getRecentlyClosed({
+                    maxResults: 1
+                }, recent => {
+                    let url = recent[0].hasOwnProperty('tab') ? recent[0].tab.url :
+                        (recent[0].hasOwnProperty('window') ? recent[0].window.tabs[0].url : "") ;
+                    let title = recent[0].hasOwnProperty('tab') ? recent[0].tab.title :
+                        (recent[0].hasOwnProperty('window') ? recent[0].window.tabs[0].title : "") ;
+                    if(!url)
+                        reject("No recent tab found.") ;
+                    this.#openNewTab(url).then(() => resolve(title)) ;
                 }) ;
             } catch(e) {
                 reject(e) ;

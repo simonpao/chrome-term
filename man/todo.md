@@ -23,8 +23,17 @@
     - `open` entire directory as a tab group, either named as directory or with custom name
     - `rename` a tab group 
  - Implement `history` command
-    - `reopen` most recently closed tab
-        - or `reopen` by name or id
     - `list` recent history (done)
         - or specify options to list history from certain date or time
+ - Implement `reopen` command
+    - List recently closed tabs/windows
+       - `reopen ls`
+       - `reopen ls google`
+    - Reopen recent tabs/windows
+       - `reopen`
+       - `reopen Google`
+       `reopen -i 123456`
  - Implement `bookmark edit` using similar logic as `simonedit`
+ - Press `Up Arrow` to recall recent commands
+ - Implement `google` command
+   - `google search term`
