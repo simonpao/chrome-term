@@ -504,7 +504,7 @@ class ChromeCommands {
     }
 
     async tabTab(args) {
-        let { action, flags, start } = await this.#tokenizeCommandLineInput(args) ;
+        let { name, action, flags, start } = await this.#tokenizeCommandLineInput(args) ;
 
         if(ChromeCommands.flags.open.includes(action)) {
             if(flags.I)
@@ -517,6 +517,10 @@ class ChromeCommands {
            ChromeCommands.flags.info.includes(action) ||
            ChromeCommands.flags.activate.includes(action)) {
             return await this.#insertTabCompletion(args) ;
+        }
+
+        if(ChromeCommands.flags.new.includes(action)) {
+            return await this.#insertUrlCompletion(args) ;
         }
 
         return "" ;
@@ -910,6 +914,21 @@ class ChromeCommands {
             return begin + " " + name ;
         }
         return "" ;
+    }
+
+    async #insertUrlCompletion(args) {
+        let { action, flags, name, start } = await this.#tokenizeCommandLineInput(args) ;
+        let begin = args.slice(0, start).join(" ") ;
+
+        if(name === "")
+            return begin + " " + "https://" ;
+        if(name === "https://")
+            return begin + " " + "https://www." ;
+        if(name === "http://")
+            return begin + " " + "http://www." ;
+
+        if(!name?.startsWith("https://") && !name?.startsWith("http://"))
+            return begin + " " + "https://" + name ;
     }
 
     async #insertSessionCompletion(args) {
