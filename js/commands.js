@@ -1099,6 +1099,16 @@ function padWithSpaces(str, totalLen) {
     return str ;
 }
 
+function maxLen(str, max) {
+    if( str.length < max ) return str ;
+    if (str.length > 3) {
+        str = str.slice(0, max-1) + "-"
+    } else {
+        str = str.slice(0, max)
+    }
+    return str ;
+}
+
 function padWithZeros(str, totalLen) {
     if( str.length === totalLen ) return str ;
     if( str.length < totalLen ) {

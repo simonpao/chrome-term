@@ -1403,27 +1403,42 @@ class ChromeCommands {
 }
 
 class EditBookmark {
+    static separator = ":\u0000" ;
     static prompt = ">\u0000" ;
+
+    printPrompt = true ;
 
     constructor(terminal, filename, bookmark) {
         this.terminal = terminal ;
         this.filename = filename ;
-        this.contents = this.#convertBookmarkToFile(bookmark) ;
-        this.linePointer = 0 ;
+        let { length, lines } = this.#convertBookmarkToFile(bookmark) ;
+        this.contents = lines ;
+        this.length = length ;
+        this.linePointer = 1 ;
     }
 
     #convertBookmarkToFile(bookmark) {
-        return [
-            { text: bookmark.id, attr: "id", readOnly: true},
-            { text: bookmark.parentId, attr: "parentId", readOnly: true},
-            { text: bookmark.title, attr: "title", readOnly: false},
-            { text: bookmark.url, attr: "url", readOnly: false},
-            { text: getFormattedDate(bookmark.dateAdded), attr: "dateAdded", readOnly: true}
-        ] ;
+        return {
+            length: 5,
+            lines: [
+                { text: bookmark.id, attr: "id", readOnly: true},
+                { text: bookmark.parentId, attr: "parentId", readOnly: true},
+                { text: bookmark.title, attr: "title", readOnly: false},
+                { text: bookmark.url, attr: "url", readOnly: false},
+                { text: getFormattedDate(bookmark.dateAdded), attr: "dateAdded", readOnly: true}
+            ]
+        } ;
     }
 
     async edit() {
         await this.print(0, 4) ;
+
+        let command = ""
+        this.terminal.terminal.in = { x: this.terminal.x, y: this.terminal.y } ;
+        while(command.toUpperCase() !== "EXIT") {
+            command = await this.userInput();
+        }
+
         return {
             result: {
                 updated: false
@@ -1435,11 +1450,59 @@ class EditBookmark {
         } ;
     }
 
+    async userInput() {
+        if(this.printPrompt) {
+            await this.prompt(EditBookmark.prompt) ;
+        } else {
+            this.printPrompt = true ;
+        }
+
+        this.terminal.insertCarrot(this.terminal.terminal.display.carrot) ;
+
+        return new Promise((resolve) => {
+            let userIn = [];
+            this.terminal.initListeners(this.parseInput.bind(this), userIn, resolve);
+        }) ;
+    }
+
+    async parseInput(keyCode, char, userIn, resolve, limit) {
+        switch(keyCode) {
+            case 13: // Carriage Return
+                this.terminal.removeListeners() ;
+                this.terminal.insertCarrot("") ;
+                await this.terminal.print("\n", 0) ;
+                resolve(userIn.join("")) ;
+                break ;
+            case 8: // Backspace
+                this.terminal.insertCarrot("") ;
+                this.terminal.backspace() ;
+                this.terminal.insertCarrot(this.terminal.terminal.display.carrot);
+                userIn.pop() ;
+                break ;
+            default:
+                if( limit ) break ;
+                if (this.terminal.isValidAsciiCode(keyCode)) {
+                    userIn.push(char);
+                    await this.terminal.print(char, 0);
+                    this.terminal.insertCarrot(this.terminal.terminal.display.carrot);
+                }
+                break ;
+        }
+    }
+
+    async prompt(prompt) {
+        await this.terminal.print(`${maxLen(this.filename, 20)}`, 0, "green");
+        await this.terminal.print(":", 0, "white");
+        await this.terminal.print(padWithZeros( this.linePointer.toString(), 3 ), 0, "blue");
+        await this.terminal.print(prompt);
+        this.terminal.terminal.in = { x: this.terminal.terminal.x, y: this.terminal.terminal.y } ;
+    }
+
     async print(start, end) {
         for(let i=start; i <=end; i++) {
             let color = this.contents[i].readOnly ? "red" : "white" ;
-            await this.terminal.print( this.contents[i].attr, 0, color ) ;
-            await this.terminal.print( EditBookmark.prompt, 0, color ) ;
+            await this.terminal.print( padWithZeros( (i+1).toString(), 3), 0, color ) ;
+            await this.terminal.print( EditBookmark.separator, 0, color ) ;
             await this.terminal.println( this.contents[i].text, 0, color ) ;
         }
     }

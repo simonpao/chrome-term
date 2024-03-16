@@ -335,12 +335,7 @@ class ChromeTerminal {
                 break ;
             default:
                 if( limit ) break ;
-                if ((keyCode > 47  && keyCode < 58)    || // number keys
-                    keyCode === 32                     || // space bar
-                    (keyCode > 64  && keyCode < 91)    || // letter keys
-                    (keyCode > 95  && keyCode < 112)   || // numpad keys
-                    (keyCode > 185 && keyCode < 193)   || // ;=,-./` (in order)
-                    (keyCode > 218 && keyCode < 223)) {   // [\]' (in order)
+                if (this.isValidAsciiCode(keyCode)) {
                     userIn.push(char);
                     this.saveUserInput(userIn) ;
                     await this.print(char, 0);
@@ -348,6 +343,15 @@ class ChromeTerminal {
                 }
                 break ;
         }
+    }
+
+    isValidAsciiCode(keyCode) {
+        return (keyCode > 47  && keyCode < 58)    || // number keys
+                keyCode === 32                    || // space bar
+               (keyCode > 64  && keyCode < 91)    || // letter keys
+               (keyCode > 95  && keyCode < 112)   || // numpad keys
+               (keyCode > 185 && keyCode < 193)   || // ;=,-./` (in order)
+               (keyCode > 218 && keyCode < 223) ;    // [\]' (in order)
     }
 
     /**
