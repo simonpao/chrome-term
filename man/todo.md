@@ -37,4 +37,4 @@
  - Implement `bookmark edit` using similar logic as `simonedit`
  - Press `Up Arrow` to recall recent commands **(done)**
  - Implement `google` command
-   - `google search term`
+   - `google search term` **(done)**

@@ -862,7 +862,31 @@ class ChromeCommands {
         return "" ;
     }
 
-    async google(args) {}
+    async google(args) {
+        let action = "" ;
+        let startIndex = 1 ;
+        if(this.#isChromeAction(args[1]?.toUpperCase())) {
+            action = args[1]?.toUpperCase() ;
+            startIndex++ ;
+        }
+
+        let flags = {} ;
+        if(isFlags(args[startIndex])) {
+            flags = this.#parseFlags(args[startIndex]) ;
+            startIndex++ ;
+        }
+
+        let name = args.slice(startIndex, args.length).join(" ") ;
+
+        if(ChromeCommands.flags.open.includes(action) || !action) {
+            let url = `https://www.google.com/search?q=${encodeURIComponent(name)}` ;
+            await this.#openNewTab(url) ;
+            this.terminal.terminal.status = 0 ;
+            await this.terminal.println( `Google search opened in new tab.` ) ;
+            return url ;
+        }
+
+    }
 
     async googleTab(args) {}
 
