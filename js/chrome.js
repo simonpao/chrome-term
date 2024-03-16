@@ -552,7 +552,8 @@ class ChromeCommands {
             return result ;
         }
 
-        if(ChromeCommands.flags.new.includes(action)) {
+        if(ChromeCommands.flags.new.includes(action) ||
+           ChromeCommands.flags.save.includes(action)) {
             if(this.path.id === "0")
                 return await cmdErr( this.terminal, `Bookmark cannot be saved to the root directory.`, 1 ) ;
 
@@ -615,7 +616,7 @@ class ChromeCommands {
             result += `${padWithSpaces('id', 10)}: ${bookmark.id}\n` ;
             result += `${padWithSpaces('parentId', 10)}: ${bookmark.parentId}\n` ;
             result += `${padWithSpaces('title', 10)}: ${bookmark.title}\n` ;
-            result += `${padWithSpaces('url', 10)}: ${bookmark.url}\n` ;
+            result += `${padWithSpaces('url', 10)}: ${bookmark.url || "N/A"}\n` ;
             result += `${padWithSpaces('dateAdded', 10)}: ${getFormattedDate(bookmark.dateAdded)}` ;
 
             this.terminal.terminal.status = 0 ;
