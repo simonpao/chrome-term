@@ -53,6 +53,9 @@ Examples include:
      - `reopen -s` (silent - does not activate the tab or remove from recent tab history)
      - `reopen Google`
      - `reopen -i 1234567890`
+ - `google`
+   - open a google search in new tab
+     - `google search term`
 
 Directory structure will be based on bookmark directories.
  - `cd` to move into folders
