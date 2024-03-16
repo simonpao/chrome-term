@@ -3,10 +3,11 @@ const VAR_MODE_EXPR   = 1 ;
 const VAR_MODE_STRING = 2 ;
 const VAR_MODE_VAR    = 3 ;
 
-const flags = {
-    list:   ["--LIST",   "-L", "LIST",   "L"],
-    recall: ["--RECALL", "-R", "RECALL", "R"],
-    delete: ["--DELETE", "-D", "DELETE", "D"],
+const availableFlags = {
+    list:   ["--LIST",   "LIST",   "L"],
+    recall: ["--RECALL", "RECALL", "R"],
+    delete: ["--DELETE", "DELETE", "D"],
+    modifiers: ["D", "L", "R"]
 }
 
 function registerDefaultCommands(terminal) {
@@ -541,11 +542,11 @@ async function saveCmd(args) {
 
 async function aliasCmd(args) {
     if(args.length >= 2) {
-        let flag = args[1]?.toUpperCase() ;
-        let name = args[2]?.toUpperCase() ;
+        let { action, flags, name, start } = await tokenizeCommandLineInput(this, args) ;
+        name = name?.toUpperCase() ;
 
         // Delete an alias
-        if(flags.delete.includes(flag)) {
+        if(availableFlags.delete.includes(action) || flags.D) {
             this.terminal.status = 0 ;
             if(!name)
                 return await this.println(`Alias name required.`) ;
@@ -559,7 +560,7 @@ async function aliasCmd(args) {
         }
 
         // List an alias
-        if(flags.list.includes(flag)) {
+        if(availableFlags.list.includes(action) || flags.L) {
             this.terminal.status = 0 ;
             if(!name)
                 return await this.println(`Alias name required.`) ;
@@ -574,7 +575,7 @@ async function aliasCmd(args) {
         }
 
         // Recall an alias
-        if(flags.recall.includes(flag)) {
+        if(availableFlags.recall.includes(action) || flags.R) {
             this.terminal.status = 0 ;
             if(!name)
                 return await this.println(`Alias name required.`) ;
@@ -854,6 +855,103 @@ async function replaceVarsInArgs(terminal, args) {
     }
     terminal.logDebugInfo("replaceVarsInArgs(terminal, args); Output args = " + args) ;
     return args ;
+}
+
+async function tokenizeCommandLineInput(terminal, args, options = {}, possibleFlags = null) {
+    if(!possibleFlags)
+        possibleFlags = availableFlags ;
+
+    let tokenOptions = {
+        ...options,
+        lookForAction: options.lookForAction !== false
+    }
+
+    // Command parts object
+    let parsed = {
+        cmd: args[0]?.toUpperCase(),
+        action: "",
+        flags: {},
+        name: "",
+        start: 1
+    }
+
+    try {
+        args = await replaceVarsInArgs(terminal, args) ;
+    } catch(e) {
+        return await cmdErr( this,  `Runtime error; ${e}.`, 1 ) ;
+    }
+
+    // Start tokenization at index 1
+    let startIndex = 1 ;
+
+    // If index 1 is a known action, save it
+    if(tokenOptions.lookForAction && isAction(args[startIndex]?.toUpperCase(), possibleFlags)) {
+        parsed.action = args[startIndex]?.toUpperCase() ;
+        startIndex++ ;
+    }
+
+    // Start processing flags
+    for(let i = startIndex; i < args.length; i++) {
+        if(isFlags(args[i])) {
+            let newFlags = parseFlags(args, i, possibleFlags, tokenOptions) ;
+            parsed.flags = mergeFlags(parsed.flags, newFlags.opts) ;
+            startIndex++ ;
+            if(newFlags.tookArgument) {
+                startIndex++ ; i++ ;
+            }
+        }
+    }
+
+    // The rest should be a string being passed as an argument to the command
+    parsed.start = startIndex ;
+    parsed.name = args.slice(startIndex, args.length).join(" ") ;
+
+    console.log( parsed ) ;
+    return parsed ;
+}
+
+function isAction(str, possibleFlags) {
+    for(let action in possibleFlags) {
+        if(action === "modifiers") continue ;
+        if(possibleFlags[action].includes(str))
+            return true ;
+    }
+    return false ;
+}
+
+function parseFlags(args, index, possibleFlags, options = {}) {
+    // Initialize object with all possible modifiers
+    let response = {
+        opts: {},
+        tookArgument: false
+    } ;
+    for(let letter of possibleFlags.modifiers)
+        response.opts[letter] = false ;
+
+    // Set response.opts to true if they exist in string
+    let flags = args[index].split("") ;
+    for(let flag of flags) {
+        flag = flag.toUpperCase() ;
+        if(response.opts.hasOwnProperty(flag)) {
+            if(options[flag]?.lookForArgument) {
+                response.opts[flag] = args[index + 1] ? args[index + 1] : "" ;
+                response.tookArgument = true ;
+            } else {
+                response.opts[flag] = true;
+            }
+        }
+    }
+
+    return response ;
+}
+
+function mergeFlags(a, b) {
+    let keys = Object.keys(b) ;
+    for(let k of keys) {
+        if(typeof b[k] === "string" || b[k] === true)
+            a[k] = b[k] ;
+    }
+    return a ;
 }
 
 function extractVarFromArgs(terminal, args) {

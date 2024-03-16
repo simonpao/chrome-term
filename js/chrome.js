@@ -111,7 +111,9 @@ class ChromeCommands {
         if(args.length < 2)
             return await cmdErr( this.terminal, "Syntax error; cd requires a directory name.", 1 ) ;
 
-        let { name } = this.#tokenizeCommandLineInput(args) ;
+        let { name } = await this.#tokenizeCommandLineInput(args, {
+            lookForAction: false
+        }) ;
 
         let dir ;
         switch(name) {
@@ -148,11 +150,13 @@ class ChromeCommands {
     }
 
     async cdTab(args) {
-        return await this.#insertCompletion(args, "dir") ;
+        return await this.#insertCompletion(args, "dir", {
+            lookForAction: false
+        }) ;
     }
 
     async ls(args) {
-        let { flags, name } = this.#tokenizeCommandLineInput(args) ;
+        let { flags, name } = await this.#tokenizeCommandLineInput(args) ;
 
         let id = this.path.id ;
         let partial = null ;
@@ -342,7 +346,7 @@ class ChromeCommands {
     }
 
     async tab(args) {
-        let { action, flags, name } = this.#tokenizeCommandLineInput(args) ;
+        let { action, flags, name } = await this.#tokenizeCommandLineInput(args) ;
         let result = "" ;
 
         if(ChromeCommands.flags.open.includes(action)) {
@@ -500,7 +504,7 @@ class ChromeCommands {
     }
 
     async tabTab(args) {
-        let { action, flags, start } = this.#tokenizeCommandLineInput(args) ;
+        let { action, flags, start } = await this.#tokenizeCommandLineInput(args) ;
 
         if(ChromeCommands.flags.open.includes(action)) {
             if(flags.I)
@@ -525,7 +529,7 @@ class ChromeCommands {
     }
 
     async bookmark(args) {
-        let { action, flags, name } = this.#tokenizeCommandLineInput(args) ;
+        let { action, flags, name } = await this.#tokenizeCommandLineInput(args) ;
         let result = "" ;
 
         if(ChromeCommands.flags.open.includes(action)) {
@@ -624,7 +628,7 @@ class ChromeCommands {
     }
 
     async bookmarkTab(args) {
-        let { action, flags, start } = this.#tokenizeCommandLineInput(args) ;
+        let { action, flags, start } = await this.#tokenizeCommandLineInput(args) ;
 
         if(ChromeCommands.flags.open.includes(action) ||
            ChromeCommands.flags.info.includes(action) ||
@@ -643,7 +647,7 @@ class ChromeCommands {
     }
 
     async history(args) {
-        let { action, flags, name } = this.#tokenizeCommandLineInput(args, {
+        let { action, flags, name } = await this.#tokenizeCommandLineInput(args, {
             D: { lookForArgument: true }
         }) ;
 
@@ -692,7 +696,7 @@ class ChromeCommands {
     async historyTab(args) {}
 
     async reopen(args) {
-        let { action, flags, name } = this.#tokenizeCommandLineInput(args) ;
+        let { action, flags, name } = await this.#tokenizeCommandLineInput(args) ;
 
         if(ChromeCommands.flags.list.includes(action)) {
             let recents = await this.#getRecentlyClosed() ;
@@ -768,7 +772,7 @@ class ChromeCommands {
     }
 
     async reopenTab(args) {
-        let { action } = this.#tokenizeCommandLineInput(args) ;
+        let { action } = await this.#tokenizeCommandLineInput(args) ;
 
         if(ChromeCommands.flags.list.includes(action) ||
            ChromeCommands.flags.open.includes(action) || !action) {
@@ -779,7 +783,7 @@ class ChromeCommands {
     }
 
     async google(args) {
-        let { action, name } = this.#tokenizeCommandLineInput(args) ;
+        let { action, name } = await this.#tokenizeCommandLineInput(args) ;
 
         if(ChromeCommands.flags.open.includes(action) || !action) {
             let url = `https://www.google.com/search?q=${encodeURIComponent(name)}` ;
@@ -800,8 +804,8 @@ class ChromeCommands {
     }
 
     // Tab completion
-    async #insertCompletion(args, type) {
-        let { name, start } = this.#tokenizeCommandLineInput(args) ;
+    async #insertCompletion(args, type, options = {}) {
+        let { name, start } = await this.#tokenizeCommandLineInput(args, options) ;
         let begin = args.slice(0, start).join(" ") ;
         let item = this.#getItemByPartialName(name, this.path.id ) ;
         let path = item[0]?.title || "" ;
@@ -847,7 +851,7 @@ class ChromeCommands {
         }
         if(item.length > 1) {
             if(item.length > 100) {
-                await this.terminal.println(`\n${items.length} matches.`) ;
+                await this.terminal.println(`\n${item.length} matches.`) ;
                 await this.terminal.printPrompt(this.terminal.terminal.display.prompt);
                 this.terminal.insertCarrot(this.terminal.terminal.display.carrot);
                 return begin + " " + name ;
@@ -859,7 +863,7 @@ class ChromeCommands {
     }
 
     async #insertIdCompletion(args) {
-        let { name, start } = this.#tokenizeCommandLineInput(args) ;
+        let { name, start } = await this.#tokenizeCommandLineInput(args) ;
         let begin = args.slice(0, start).join(" ") ;
         let items = this.#filterItemsById(name) ;
 
@@ -878,7 +882,7 @@ class ChromeCommands {
     }
 
     async #insertTabCompletion(args) {
-        let { action, flags, name, start } = this.#tokenizeCommandLineInput(args) ;
+        let { action, flags, name, start } = await this.#tokenizeCommandLineInput(args) ;
         let begin = args.slice(0, start).join(" ") ;
 
         let tabs ;
@@ -896,7 +900,7 @@ class ChromeCommands {
             return begin + " " + tabs[0][attr] ;
         if(tabs.length > 1) {
             if(tabs.length > 100) {
-                await this.terminal.println(`\n${items.length} matches.`) ;
+                await this.terminal.println(`\n${tabs.length} matches.`) ;
                 await this.terminal.printPrompt(this.terminal.terminal.display.prompt);
                 this.terminal.insertCarrot(this.terminal.terminal.display.carrot);
                 return begin + " " + name ;
@@ -908,7 +912,7 @@ class ChromeCommands {
     }
 
     async #insertSessionCompletion(args) {
-        let { action, flags, name, start } = this.#tokenizeCommandLineInput(args) ;
+        let { action, flags, name, start } = await this.#tokenizeCommandLineInput(args) ;
         let begin = args.slice(0, start).join(" ") ;
 
         let recents = await this.#getRecentlyClosed() ;
@@ -1260,52 +1264,8 @@ class ChromeCommands {
         ) ;
     }
 
-    #tokenizeCommandLineInput(args, options = {}) {
-        // Command parts object
-        let parsed = {
-            cmd: args[0]?.toUpperCase(),
-            action: "",
-            flags: {},
-            name: "",
-            start: 1
-        }
-
-        // Start tokenization at index 1
-        let startIndex = 1 ;
-
-        // If index 1 is a known action, save it
-        if(this.#isChromeAction(args[startIndex]?.toUpperCase())) {
-            parsed.action = args[startIndex]?.toUpperCase() ;
-            startIndex++ ;
-        }
-
-        // Start processing flags
-        for(let i = startIndex; i < args.length; i++) {
-            if(isFlags(args[i])) {
-                let newFlags = this.#parseFlags(args, i, options) ;
-                parsed.flags = this.#mergeFlags(parsed.flags, newFlags.opts) ;
-                startIndex++ ;
-                if(newFlags.tookArgument) {
-                    startIndex++ ; i++ ;
-                }
-            }
-        }
-
-        // The rest should be a string being passed as an argument to the command
-        parsed.start = startIndex ;
-        parsed.name = args.slice(startIndex, args.length).join(" ") ;
-
-        //console.log( parsed ) ;
-        return parsed ;
-    }
-
-    #mergeFlags(a, b) {
-        let keys = Object.keys(b) ;
-        for(let k of keys) {
-            if(typeof b[k] === "string" || b[k] === true)
-                a[k] = b[k] ;
-        }
-        return a ;
+    async #tokenizeCommandLineInput(args, options = {}) {
+        return await tokenizeCommandLineInput(this.terminal, args, options, ChromeCommands.flags) ;
     }
 
     #constructPath() {
@@ -1373,40 +1333,5 @@ class ChromeCommands {
             this.settings = tmpSettings;
             this.terminal.terminal.display.account = this.settings.account ;
         }
-    }
-
-    #parseFlags(args, index, options = {}) {
-        // Initialize object with all possible modifiers
-        let response = {
-            opts: {},
-            tookArgument: false
-        } ;
-        for(let letter of ChromeCommands.flags.modifiers)
-            response.opts[letter] = false ;
-
-        // Set response.opts to true if they exist in string
-        let flags = args[index].split("") ;
-        for(let flag of flags) {
-            flag = flag.toUpperCase() ;
-            if(response.opts.hasOwnProperty(flag)) {
-                if(options[flag]?.lookForArgument) {
-                    response.opts[flag] = args[index + 1] ? args[index + 1] : "" ;
-                    response.tookArgument = true ;
-                } else {
-                    response.opts[flag] = true;
-                }
-            }
-        }
-
-        return response ;
-    }
-
-    #isChromeAction(str) {
-        for(let action in ChromeCommands.flags) {
-            if(action === "modifiers") continue ;
-            if(ChromeCommands.flags[action].includes(str))
-                return true ;
-        }
-        return false ;
     }
 }
