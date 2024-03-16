@@ -50,8 +50,9 @@ Examples include:
      - `reopen ls google`
    - Reopen recent tabs/windows
      - `reopen`
+     - `reopen -s` (silent - does not activate the tab or remove from recent tab history)
      - `reopen Google`
-     - `reopen -i 123456`
+     - `reopen -i 1234567890`
 
 Directory structure will be based on bookmark directories.
  - `cd` to move into folders

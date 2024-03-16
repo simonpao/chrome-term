@@ -15,6 +15,7 @@ class ChromeTerminal {
             path: "/",
             account: "Chrome",
             data: [],
+            cmdHistory: new CommandHistoryStack(),
             printPrompt: true
         },
         program: {
@@ -85,6 +86,7 @@ class ChromeTerminal {
                 typeof tmpDisplay.y === "number" && tmpDisplay.in ) {
                 this.clr() ;
                 this.terminal.display = tmpDisplay.display ;
+                this.terminal.display.cmdHistory = new CommandHistoryStack(tmpDisplay.display.cmdHistory) ;
                 this.terminal.x = tmpDisplay.x ;
                 this.terminal.y = tmpDisplay.y ;
                 this.terminal.in = tmpDisplay.in ;
@@ -321,7 +323,9 @@ class ChromeTerminal {
                 this.insertCarrot(this.terminal.display.carrot);
                 userIn.pop() ;
                 break ;
-            case 9:
+            case 9:  // Tab
+            case 38: // Up Arrow
+            case 40: // Down Arrow
                 if(typeof specialKey === "function")
                     await specialKey(userIn.join(""), userIn, keyCode) ;
                 break ;
@@ -349,7 +353,7 @@ class ChromeTerminal {
         let result = "" ;
 
         switch(keyCode) {
-            case 9:
+            case 9: // Tab
                 if( command === "" ) return "" ;
 
                 this.logDebugInfo("Incoming partial command: " + command) ;
@@ -370,6 +374,26 @@ class ChromeTerminal {
                 }
 
                 break ;
+            case 38: // Up Arrow
+            case 40: // Down Arrow
+                if(keyCode === 40)
+                    this.terminal.display.cmdHistory.unshift() ;
+                else
+                    this.terminal.display.cmdHistory.shift() ;
+
+                let res = this.terminal.display.cmdHistory.stack ;
+                this.insertCarrot("") ;
+                this.setCharPos(this.terminal.in.x, this.terminal.in.y) ;
+                await this.print(this.#spaces(userIn.length)) ;
+
+                userIn.splice( 0, userIn.length ) ;
+                userIn.push(...res.split("")) ;
+
+                this.setCharPos(this.terminal.in.x, this.terminal.in.y) ;
+                await this.print(res) ;
+                this.insertCarrot(this.terminal.display.carrot);
+
+                break ;
         }
     }
 
@@ -386,14 +410,17 @@ class ChromeTerminal {
         this.logDebugInfo("Incoming command: " + command) ;
 
         let args = command.split(" ") ;
+        this.terminal.display.cmdHistory.reset() ;
 
         let cmd = args[0].toUpperCase() ;
         if( typeof this.terminal.registeredCmd[cmd] !== "undefined" ) {
+            this.terminal.display.cmdHistory.stack = command ;
             return await this.terminal.registeredCmd[cmd].callback(args) ;
         }
 
         // Check if it's an alias
         if( typeof this.terminal.program.aliases[cmd] !== "undefined" ) {
+            this.terminal.display.cmdHistory.stack = command ;
             return await run( this, this.terminal.program.aliases[cmd] ) ;
         }
 
@@ -479,11 +506,63 @@ class ChromeTerminal {
         $("#debug-output").prepend( msg + "\n" );
         console.debug(msg) ;
     }
+
+    #spaces(num, char = " ") {
+        let spaces = "" ;
+        while(num) {
+            spaces += char ;
+            num-- ;
+        }
+        return spaces ;
+    }
 }
 
 class TerminalCharacter {
     constructor(char, color) {
         this.char = char ;
         this.color = color ;
+    }
+}
+
+class CommandHistoryStack {
+    static MAX_COMMANDS = 50 ;
+    #stack ;
+    #pointer ;
+
+    constructor(stack = []) {
+        this.#stack = stack ;
+        this.#pointer = -1 ;
+    }
+
+    set stack(command) {
+        let length = this.#stack.unshift(command) ;
+        if(length >= CommandHistoryStack.MAX_COMMANDS)
+            this.#stack.splice(CommandHistoryStack.MAX_COMMANDS) ;
+    }
+
+    get stack() {
+        if(this.#pointer < 0)
+            return "" ;
+        return this.#stack[this.#pointer] ;
+    }
+
+    shift() {
+        this.#pointer ++ ;
+        if(this.#pointer >= CommandHistoryStack.MAX_COMMANDS || this.#pointer >= this.#stack.length)
+            this.#pointer -- ;
+    }
+
+    unshift() {
+        this.#pointer -- ;
+        if(this.#pointer < -1)
+            this.#pointer ++ ;
+    }
+
+    reset() {
+        this.#pointer = -1 ;
+    }
+
+    toJSON() {
+        return this.#stack ;
     }
 }

@@ -25,15 +25,16 @@
  - Implement `history` command **(done)**
     - `list` recent history **(done)**
         - or specify options to list history from certain date or time **(done)**
- - Implement `reopen` command
-    - List recently closed tabs/windows
+ - Implement `reopen` command (`-s` to open silently) **(done)**
+    - List recently closed tabs/windows **(done)**
        - `reopen ls` **(done)**
-       - `reopen ls google`
+       - `reopen ls google` **(done)**
+       - `reopen ls -i 123456` **(done)**
     - Reopen recent tabs/windows **(done)**
        - `reopen` **(done)**
        - `reopen Google` **(done)**
        - `reopen -i 123456` **(done)**
  - Implement `bookmark edit` using similar logic as `simonedit`
- - Press `Up Arrow` to recall recent commands
+ - Press `Up Arrow` to recall recent commands **(done)**
  - Implement `google` command
    - `google search term`
