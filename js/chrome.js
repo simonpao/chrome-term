@@ -605,7 +605,8 @@ class ChromeCommands {
             }
         }
 
-        if(ChromeCommands.flags.info.includes(action)) {
+        if(ChromeCommands.flags.info.includes(action) ||
+           ChromeCommands.flags.edit.includes(action)) {
             if(!name)
                 return await cmdErr( this.terminal, `No bookmark specified.`, 1 ) ;
             let bookmark ;
@@ -617,19 +618,43 @@ class ChromeCommands {
             if(!bookmark)
                 return await cmdErr( this.terminal, `Bookmark "${name}" not found.`, 1 ) ;
 
-            result += `${padWithSpaces('id', 10)}: ${bookmark.id}\n` ;
-            result += `${padWithSpaces('parentId', 10)}: ${bookmark.parentId}\n` ;
-            result += `${padWithSpaces('title', 10)}: ${bookmark.title}\n` ;
-            result += `${padWithSpaces('url', 10)}: ${bookmark.url || "N/A"}\n` ;
-            result += `${padWithSpaces('dateAdded', 10)}: ${getFormattedDate(bookmark.dateAdded)}` ;
+            if(ChromeCommands.flags.info.includes(action)) {
+                result += `${padWithSpaces('id', 10)}: ${bookmark.id}\n` ;
+                result += `${padWithSpaces('parentId', 10)}: ${bookmark.parentId}\n` ;
+                result += `${padWithSpaces('title', 10)}: ${bookmark.title}\n` ;
+                result += `${padWithSpaces('url', 10)}: ${bookmark.url || "N/A"}\n` ;
+                result += `${padWithSpaces('dateAdded', 10)}: ${getFormattedDate(bookmark.dateAdded)}` ;
 
-            this.terminal.terminal.status = 0 ;
-            await this.terminal.println( result ) ;
-            return result ;
+                this.terminal.terminal.status = 0 ;
+                await this.terminal.println( result ) ;
+                return result ;
+            } else {
+                try {
+                    let editor = new EditBookmark(
+                        this.terminal,
+                        bookmark.title,
+                        bookmark
+                    ) ;
+                    let updates = await editor.edit() ;
+                    if(updates.result.updated) {
+                        await this.#updateBookmark(bookmark.id, updates.contents);
+                        result = `${bookmark.title} updated.`
+                        await this.terminal.println(result);
+                    } else {
+                        result = `${bookmark.title} closed without updating.`
+                        await this.terminal.println(result);
+                    }
+                    this.terminal.terminal.status = 0;
+                    return result ;
+                } catch(e) {
+                    return await cmdErr( this.terminal, `Runtime error; ${e}`, 1 ) ;
+                }
+            }
         }
 
-        if(ChromeCommands.flags.edit.includes(action)) {}
-
+        this.terminal.terminal.status = 1 ;
+        await this.terminal.println( `Failed to process bookmark command.` ) ;
+        return result ;
     }
 
     async bookmarkTab(args) {
@@ -989,6 +1014,27 @@ class ChromeCommands {
             this.bookmarks.splice(
                 this.bookmarks.findIndex( item => item.id === id ), 1
             );
+        }) ;
+    }
+
+    async #updateBookmark(id, updates) {
+        return new Promise((resolve, reject) => {
+            if(!id || !updates || !updates.title) {
+                reject("Error updating bookmark") ;
+                return ;
+            }
+            chrome.bookmarks.update(id, updates, res => resolve(res));
+        }) ;
+    }
+
+    async #moveBookmark(id, destination) {
+        return new Promise((resolve, reject) => {
+            if(!id || !destination) {
+                reject("Error updating bookmark") ;
+                return ;
+            }
+            chrome.bookmarks.move(id, destination, res => resolve(res));
+            this.bookmarks[this.bookmarks.findIndex( item => item.id === id )].parentId = destination.parentId ;
         }) ;
     }
 
@@ -1352,6 +1398,49 @@ class ChromeCommands {
         if( tmpSettings ) {
             this.settings = tmpSettings;
             this.terminal.terminal.display.account = this.settings.account ;
+        }
+    }
+}
+
+class EditBookmark {
+    static prompt = ">\u0000" ;
+
+    constructor(terminal, filename, bookmark) {
+        this.terminal = terminal ;
+        this.filename = filename ;
+        this.contents = this.#convertBookmarkToFile(bookmark) ;
+        this.linePointer = 0 ;
+    }
+
+    #convertBookmarkToFile(bookmark) {
+        return [
+            { text: bookmark.id, attr: "id", readOnly: true},
+            { text: bookmark.parentId, attr: "parentId", readOnly: true},
+            { text: bookmark.title, attr: "title", readOnly: false},
+            { text: bookmark.url, attr: "url", readOnly: false},
+            { text: getFormattedDate(bookmark.dateAdded), attr: "dateAdded", readOnly: true}
+        ] ;
+    }
+
+    async edit() {
+        await this.print(0, 4) ;
+        return {
+            result: {
+                updated: false
+            },
+            contents: {
+                title: this.contents[ this.contents.findIndex(item => item.attr === "title") ]?.text,
+                url: this.contents[ this.contents.findIndex(item => item.attr === "url") ]?.text
+            }
+        } ;
+    }
+
+    async print(start, end) {
+        for(let i=start; i <=end; i++) {
+            let color = this.contents[i].readOnly ? "red" : "white" ;
+            await this.terminal.print( this.contents[i].attr, 0, color ) ;
+            await this.terminal.print( EditBookmark.prompt, 0, color ) ;
+            await this.terminal.println( this.contents[i].text, 0, color ) ;
         }
     }
 }
