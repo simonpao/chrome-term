@@ -906,7 +906,7 @@ async function tokenizeCommandLineInput(terminal, args, options = {}, possibleFl
     parsed.start = startIndex ;
     parsed.name = args.slice(startIndex, args.length).join(" ") ;
 
-    console.log( parsed ) ;
+    // console.log( parsed ) ;
     return parsed ;
 }
 
