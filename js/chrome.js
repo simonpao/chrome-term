@@ -88,7 +88,7 @@ class ChromeCommands {
             help: "./man/chrome.json"
         });
         terminal.registerCmd("HISTORY", {
-            args: [ "action", "[-d]", "[YYYY-MM-DD HH:MM:SS]", "[name (or id with -i flag)]" ],
+            args: [ "action", "[-d]", "[YYYY-MM-DD-HH:MM:SS]", "[name (or id with -i flag)]" ],
             callback: this.history.bind(this),
             ontab: this.historyTab.bind(this),
             help: "./man/chrome.json"
@@ -111,7 +111,7 @@ class ChromeCommands {
         if(args.length < 2)
             return await cmdErr( this.terminal, "Syntax error; cd requires a directory name.", 1 ) ;
 
-        let name = args.splice(1, args.length-1).join(" ") ;
+        let { name } = this.#tokenizeCommandLineInput(args) ;
 
         let dir ;
         switch(name) {
@@ -152,14 +152,8 @@ class ChromeCommands {
     }
 
     async ls(args) {
-        let flags = {} ;
-        let startPos = 1 ;
-        if(isFlags(args[1])) {
-            flags = this.#parseFlags(args[1]) ;
-            startPos ++ ;
-        }
+        let { flags, name } = this.#tokenizeCommandLineInput(args) ;
 
-        let name = args.splice(startPos, args.length-1).join(" ") ;
         let id = this.path.id ;
         let partial = null ;
         if(name) {
@@ -217,10 +211,7 @@ class ChromeCommands {
     }
 
     async lsTab(args) {
-        let startPos = 1 ;
-        if(isFlags(args[1]))
-            startPos ++ ;
-        return await this.#insertCompletion(args, "dir", startPos) ;
+        return await this.#insertCompletion(args, "dir") ;
     }
 
     async su(args) {
@@ -307,19 +298,13 @@ class ChromeCommands {
     async cp(args) {}
 
     async cpTab(args) {
-        let startPos = 1 ;
-        if(isFlags(args[1]))
-            startPos ++ ;
-        return await this.#insertCompletion(args, "dir", startPos) ;
+        return await this.#insertCompletion(args, "dir") ;
     }
 
     async mv(args) {}
 
     async mvTab(args) {
-        let startPos = 1 ;
-        if(isFlags(args[1]))
-            startPos ++ ;
-        return await this.#insertCompletion(args, "dir", startPos) ;
+        return await this.#insertCompletion(args, "dir") ;
     }
 
     async rm(args) {
@@ -357,16 +342,7 @@ class ChromeCommands {
     }
 
     async tab(args) {
-        let action = args[1]?.toUpperCase() ;
-
-        let flags = {} ;
-        let startPath = 2 ;
-        if(isFlags(args[2])) {
-            flags = this.#parseFlags(args[2]) ;
-            startPath++ ;
-        }
-
-        let name = args.slice(startPath, args.length).join(" ") ;
+        let { action, flags, name } = this.#tokenizeCommandLineInput(args) ;
         let result = "" ;
 
         if(ChromeCommands.flags.open.includes(action)) {
@@ -524,26 +500,19 @@ class ChromeCommands {
     }
 
     async tabTab(args) {
-        let action = args[1]?.toUpperCase() ;
-
-        let flags = {} ;
-        let startPath = 2 ;
-        if(isFlags(args[2])) {
-            flags = this.#parseFlags(args[2]) ;
-            startPath++ ;
-        }
+        let { action, flags, start } = this.#tokenizeCommandLineInput(args) ;
 
         if(ChromeCommands.flags.open.includes(action)) {
             if(flags.I)
-                return await this.#insertIdCompletion(args, startPath) ;
+                return await this.#insertIdCompletion(args) ;
             else
-                return await this.#insertCompletion(args, "dir", startPath) ;
+                return await this.#insertCompletion(args, "dir") ;
         }
 
         if(ChromeCommands.flags.close.includes(action) ||
            ChromeCommands.flags.info.includes(action) ||
            ChromeCommands.flags.activate.includes(action)) {
-            return await this.#insertTabCompletion(args, startPath, flags) ;
+            return await this.#insertTabCompletion(args) ;
         }
 
         return "" ;
@@ -556,16 +525,7 @@ class ChromeCommands {
     }
 
     async bookmark(args) {
-        let action = args[1]?.toUpperCase() ;
-
-        let flags = {} ;
-        let startPath = 2 ;
-        if(isFlags(args[2])) {
-            flags = this.#parseFlags(args[2]) ;
-            startPath++ ;
-        }
-
-        let name = args.slice(startPath, args.length).join(" ") ;
+        let { action, flags, name } = this.#tokenizeCommandLineInput(args) ;
         let result = "" ;
 
         if(ChromeCommands.flags.open.includes(action)) {
@@ -664,52 +624,37 @@ class ChromeCommands {
     }
 
     async bookmarkTab(args) {
-        let action = args[1]?.toUpperCase() ;
-
-        let flags = {} ;
-        let startPath = 2 ;
-        if(isFlags(args[2])) {
-            flags = this.#parseFlags(args[2]) ;
-            startPath++ ;
-        }
+        let { action, flags, start } = this.#tokenizeCommandLineInput(args) ;
 
         if(ChromeCommands.flags.open.includes(action) ||
            ChromeCommands.flags.info.includes(action) ||
            ChromeCommands.flags.edit.includes(action)) {
             if(flags.I)
-                return await this.#insertIdCompletion(args, startPath) ;
+                return await this.#insertIdCompletion(args) ;
             else
-                return await this.#insertCompletion(args, "dir", startPath) ;
+                return await this.#insertCompletion(args, "dir") ;
         }
 
         if(ChromeCommands.flags.new.includes(action)) {
-            return await this.#insertTabCompletion(args, startPath, flags) ;
+            return await this.#insertTabCompletion(args) ;
         }
 
         return "" ;
     }
 
     async history(args) {
-        let action = args[1]?.toUpperCase() ;
-
-        let flags = {} ;
-        let startIndex = 2 ;
-        if(isFlags(args[2])) {
-            flags = this.#parseFlags(args[2]) ;
-            startIndex++ ;
-        }
+        let { action, flags, name } = this.#tokenizeCommandLineInput(args, {
+            D: { lookForArgument: true }
+        }) ;
 
         let date = null ;
-        if(flags.D) {
+        if(typeof flags.D === "string") {
             try {
-                date = getMillisFromDateStr(args[3]) ;
-                startIndex++ ;
+                date = getMillisFromDateStr(flags.D) ;
             } catch(e) {
                 return await cmdErr( this.terminal, e, 1 ) ;
             }
         }
-
-        let name = args.slice(startIndex, args.length).join(" ") ;
 
         if(ChromeCommands.flags.list.includes(action)) {
             let text = "" ;
@@ -747,20 +692,7 @@ class ChromeCommands {
     async historyTab(args) {}
 
     async reopen(args) {
-        let action = "" ;
-        let startIndex = 1 ;
-        if(this.#isChromeAction(args[1]?.toUpperCase())) {
-            action = args[1]?.toUpperCase() ;
-            startIndex++ ;
-        }
-
-        let flags = {} ;
-        if(isFlags(args[startIndex])) {
-            flags = this.#parseFlags(args[startIndex]) ;
-            startIndex++ ;
-        }
-
-        let name = args.slice(startIndex, args.length).join(" ") ;
+        let { action, flags, name } = this.#tokenizeCommandLineInput(args) ;
 
         if(ChromeCommands.flags.list.includes(action)) {
             let recents = await this.#getRecentlyClosed() ;
@@ -778,26 +710,12 @@ class ChromeCommands {
 
             let max = 20 ;
             for(let item of recents) {
-                let sessionItems = item.hasOwnProperty("tab") ? [ item.tab ] : item.window.tabs ;
-
-                for(let sessItem of sessionItems) {
-                    if(name) {
-                        if(flags.I) {
-                            if (!sessItem.sessionId?.toString()?.startsWith(name))
-                                continue;
-                        } else {
-                            if (!sessItem.title?.toLowerCase()?.startsWith(name.toLowerCase()))
-                                continue;
-                        }
-                    }
-                    max-- ;
-                    let tmp = padWithSpaces( sessItem.sessionId?.toString() || "-", 12) ;
-                    tmp += " " + padWithSpaces( getFormattedDate(item.lastModified*1000), 18) ;
-                    tmp += " " + padWithSpaces( sessItem.title, this.terminal.terminal.columns-34 ) ;
-                    out += tmp + "\n" ;
-                    await this.terminal.println(tmp, 0) ;
-                    if(max <= 0) break ;
-                }
+                max-- ;
+                let tmp = padWithSpaces( item.sessionId?.toString() || "-", 12) ;
+                tmp += " " + padWithSpaces( getFormattedDate(item.lastModified), 18) ;
+                tmp += " " + padWithSpaces( item.title, this.terminal.terminal.columns-34 ) ;
+                out += tmp + "\n" ;
+                await this.terminal.println(tmp, 0) ;
                 if(max <= 0) break ;
             }
 
@@ -806,77 +724,62 @@ class ChromeCommands {
         }
 
         if(ChromeCommands.flags.open.includes(action) || !action) {
-            let out ;
-            if(name) {
-                if(!flags.S && flags.I) {
-                    await this.terminal.printPrompt(this.terminal.terminal.display.prompt);
-                    await this.#openRecentlyClosed(flags.S, name) ;
-                }
+            try {
+                let out ;
+                if(name) {
+                    if(!flags.S && flags.I) {
+                        await this.terminal.printPrompt(this.terminal.terminal.display.prompt);
+                        await this.#openRecentlyClosed(flags.S, name) ;
+                    }
 
-                let recents = await this.#getRecentlyClosed() ;
+                    let recents = await this.#getRecentlyClosed() ;
 
-                if(!recents || !recents?.length) {
-                    out = "No recently closed tabs found" ;
-                    await this.terminal.println(out) ;
+                    if(!recents || !recents?.length) {
+                        out = "No recently closed tabs found" ;
+                        await this.terminal.println(out) ;
+                    } else {
+                        let item = recents.filter(
+                            item =>
+                                flags.I ? item.sessionId === name :
+                                    item.title?.toLowerCase() === name?.toLowerCase()
+                        ) ;
+                        if(item.length === 0)
+                            return await cmdErr( this.terminal, `Recent tab ${name + " "}not found.`, 1 ) ;
+                        if(!flags.S)
+                            await this.terminal.printPrompt(this.terminal.terminal.display.prompt) ;
+                        let restored = await this.#openRecentlyClosed(flags.S, item[0].sessionId) ;
+                        out = `${restored} opened in new tab.`
+                        await this.terminal.println( out ) ;
+                    }
                 } else {
-                    let sessionItems = this.#normalizeRecentlyClosed(recents) ;
-                    let item = sessionItems.filter(item => flags.I ? item.sessionId === name : item.title === name) ;
                     if(!flags.S)
-                        await this.terminal.printPrompt(this.terminal.terminal.display.prompt) ;
-                    let restored = await this.#openRecentlyClosed(flags.S, item[0].sessionId) ;
+                        await this.terminal.printPrompt(this.terminal.terminal.display.prompt);
+                    let restored = await this.#openRecentlyClosed(flags.S) ;
                     out = `${restored} opened in new tab.`
                     await this.terminal.println( out ) ;
                 }
-            } else {
-                if(!flags.S)
-                    await this.terminal.printPrompt(this.terminal.terminal.display.prompt);
-                let restored = await this.#openRecentlyClosed(flags.S) ;
-                out = `${restored} opened in new tab.`
-                await this.terminal.println( out ) ;
-            }
 
-            this.terminal.terminal.status = 0;
-            return out;
+                this.terminal.terminal.status = 0;
+                return out;
+            } catch(e) {
+                return await cmdErr( this.terminal, `Runtime error; ${e}`, 1 ) ;
+            }
         }
     }
 
     async reopenTab(args) {
-        let action = "" ;
-        let startIndex = 1 ;
-        if(this.#isChromeAction(args[1]?.toUpperCase())) {
-            action = args[1]?.toUpperCase() ;
-            startIndex++ ;
-        }
-
-        let flags = {} ;
-        if(isFlags(args[startIndex])) {
-            flags = this.#parseFlags(args[startIndex]) ;
-            startIndex++ ;
-        }
+        let { action } = this.#tokenizeCommandLineInput(args) ;
 
         if(ChromeCommands.flags.list.includes(action) ||
            ChromeCommands.flags.open.includes(action) || !action) {
-            return await this.#insertSessionCompletion(args, startIndex, flags) ;
+            return await this.#insertSessionCompletion(args) ;
         }
 
         return "" ;
     }
 
     async google(args) {
-        let action = "" ;
-        let startIndex = 1 ;
-        if(this.#isChromeAction(args[1]?.toUpperCase())) {
-            action = args[1]?.toUpperCase() ;
-            startIndex++ ;
-        }
-
-        let flags = {} ;
-        if(isFlags(args[startIndex])) {
-            flags = this.#parseFlags(args[startIndex]) ;
-            startIndex++ ;
-        }
-
-        let name = args.slice(startIndex, args.length).join(" ") ;
+        let { action, name } = this.#tokenizeCommandLineInput(args) ;
 
         if(ChromeCommands.flags.open.includes(action) || !action) {
             let url = `https://www.google.com/search?q=${encodeURIComponent(name)}` ;
@@ -888,16 +791,18 @@ class ChromeCommands {
 
     }
 
-    async googleTab(args) {}
+    async googleTab(args) {
+
+    }
 
     async #printList(collection, attribute, printPrompt) {
         return await printList(this.terminal, collection, attribute, printPrompt) ;
     }
 
     // Tab completion
-    async #insertCompletion(args, type, start = 1) {
+    async #insertCompletion(args, type) {
+        let { name, start } = this.#tokenizeCommandLineInput(args) ;
         let begin = args.slice(0, start).join(" ") ;
-        let name = args.slice(start, args.length).join(" ") ;
         let item = this.#getItemByPartialName(name, this.path.id ) ;
         let path = item[0]?.title || "" ;
 
@@ -953,9 +858,9 @@ class ChromeCommands {
         return "" ;
     }
 
-    async #insertIdCompletion(args, start = 1) {
+    async #insertIdCompletion(args) {
+        let { name, start } = this.#tokenizeCommandLineInput(args) ;
         let begin = args.slice(0, start).join(" ") ;
-        let name = args.slice(start, args.length).join(" ") ;
         let items = this.#filterItemsById(name) ;
 
         if(items.length === 1)
@@ -972,9 +877,9 @@ class ChromeCommands {
         }
     }
 
-    async #insertTabCompletion(args, start = 1, flags = {}) {
+    async #insertTabCompletion(args) {
+        let { action, flags, name, start } = this.#tokenizeCommandLineInput(args) ;
         let begin = args.slice(0, start).join(" ") ;
-        let name = args.slice(start, args.length).join(" ") ;
 
         let tabs ;
         if(flags.I)
@@ -1002,19 +907,18 @@ class ChromeCommands {
         return "" ;
     }
 
-    async #insertSessionCompletion(args, start = 1, flags = {}) {
+    async #insertSessionCompletion(args) {
+        let { action, flags, name, start } = this.#tokenizeCommandLineInput(args) ;
         let begin = args.slice(0, start).join(" ") ;
-        let name = args.slice(start, args.length).join(" ") ;
 
         let recents = await this.#getRecentlyClosed() ;
-        let sessionItems = this.#normalizeRecentlyClosed(recents) ;
         let session ;
         if(flags.I)
-            session = sessionItems.filter(item =>
+            session = recents.filter(item =>
                 item.sessionId?.toString()?.startsWith(name)
             ) ;
         else
-            session = sessionItems.filter(item =>
+            session = recents.filter(item =>
                 item.title?.toLowerCase()?.startsWith(name.toLowerCase())
             ) ;
 
@@ -1259,9 +1163,16 @@ class ChromeCommands {
     #normalizeRecentlyClosed(recents) {
         let sessionItems = [] ;
         for(let item of recents) {
-            sessionItems.push(
-                ...(item.hasOwnProperty("tab") ? [ item.tab ] : item.window.tabs)
-            ) ;
+            let window = !item?.hasOwnProperty("tab") ;
+            if(window) {
+                for(let i in item?.window?.tabs) if(item?.window?.tabs.hasOwnProperty(i)) {
+                    item.window.tabs[i].lastModified = item.lastModified*1000 ;
+                }
+                sessionItems.push( ...item?.window?.tabs ) ;
+            } else {
+                item.tab.lastModified = item.lastModified*1000 ;
+                sessionItems.push( item?.tab ) ;
+            }
         }
         return sessionItems ;
     }
@@ -1272,7 +1183,7 @@ class ChromeCommands {
                 chrome.sessions.getRecentlyClosed({
                     maxResults: limit
                 }, recent => {
-                    resolve(recent) ;
+                    resolve(this.#normalizeRecentlyClosed(recent)) ;
                 }) ;
             } catch(e) {
                 reject(e) ;
@@ -1288,18 +1199,18 @@ class ChromeCommands {
                         maxResults: 25
                     }, recent => {
                         if(sessionId)
-                            recent = recent.filter(item => item.sessionId === sessionId) ;
-                        let url = recent[0].hasOwnProperty('tab') ? recent[0].tab.url :
-                            (recent[0].hasOwnProperty('window') ? recent[0].window.tabs[0].url : "") ;
-                        let title = recent[0].hasOwnProperty('tab') ? recent[0].tab.title :
-                            (recent[0].hasOwnProperty('window') ? recent[0].window.tabs[0].title : "") ;
+                            recent = recent.filter(item => item.tab.sessionId === sessionId) ;
+                        let url = recent[0]?.hasOwnProperty('tab') ? recent[0]?.tab.url :
+                            (recent[0]?.hasOwnProperty('window') ? recent[0]?.window.tabs[0].url : "") ;
+                        let title = recent[0]?.hasOwnProperty('tab') ? recent[0]?.tab.title :
+                            (recent[0]?.hasOwnProperty('window') ? recent[0]?.window.tabs[0].title : "") ;
                         if(!url)
                             reject("No recent tab found.") ;
                         this.#openNewTab(url).then(() => resolve(title)) ;
                     }) ;
                 } else {
                     chrome.sessions.restore(sessionId, restored => {
-                        resolve(restored.hasOwnProperty('tab') ? restored[0].tab.title : "window") ;
+                        resolve(restored?.hasOwnProperty('tab') ? restored[0].tab.title : "window") ;
                     }) ;
                 }
             } catch(e) {
@@ -1347,6 +1258,54 @@ class ChromeCommands {
                 item.title?.toLowerCase()?.startsWith(part?.toLowerCase()) &&
                 item.parentId === parentId
         ) ;
+    }
+
+    #tokenizeCommandLineInput(args, options = {}) {
+        // Command parts object
+        let parsed = {
+            cmd: args[0]?.toUpperCase(),
+            action: "",
+            flags: {},
+            name: "",
+            start: 1
+        }
+
+        // Start tokenization at index 1
+        let startIndex = 1 ;
+
+        // If index 1 is a known action, save it
+        if(this.#isChromeAction(args[startIndex]?.toUpperCase())) {
+            parsed.action = args[startIndex]?.toUpperCase() ;
+            startIndex++ ;
+        }
+
+        // Start processing flags
+        for(let i = startIndex; i < args.length; i++) {
+            if(isFlags(args[i])) {
+                let newFlags = this.#parseFlags(args, i, options) ;
+                parsed.flags = this.#mergeFlags(parsed.flags, newFlags.opts) ;
+                startIndex++ ;
+                if(newFlags.tookArgument) {
+                    startIndex++ ; i++ ;
+                }
+            }
+        }
+
+        // The rest should be a string being passed as an argument to the command
+        parsed.start = startIndex ;
+        parsed.name = args.slice(startIndex, args.length).join(" ") ;
+
+        //console.log( parsed ) ;
+        return parsed ;
+    }
+
+    #mergeFlags(a, b) {
+        let keys = Object.keys(b) ;
+        for(let k of keys) {
+            if(typeof b[k] === "string" || b[k] === true)
+                a[k] = b[k] ;
+        }
+        return a ;
     }
 
     #constructPath() {
@@ -1416,21 +1375,30 @@ class ChromeCommands {
         }
     }
 
-    #parseFlags(str) {
+    #parseFlags(args, index, options = {}) {
         // Initialize object with all possible modifiers
-        let opts = {} ;
+        let response = {
+            opts: {},
+            tookArgument: false
+        } ;
         for(let letter of ChromeCommands.flags.modifiers)
-            opts[letter] = false ;
+            response.opts[letter] = false ;
 
-        // Set opts to true if they exist in string
-        let flags = str.split("") ;
+        // Set response.opts to true if they exist in string
+        let flags = args[index].split("") ;
         for(let flag of flags) {
             flag = flag.toUpperCase() ;
-            if(opts.hasOwnProperty(flag))
-                opts[flag] = true ;
+            if(response.opts.hasOwnProperty(flag)) {
+                if(options[flag]?.lookForArgument) {
+                    response.opts[flag] = args[index + 1] ? args[index + 1] : "" ;
+                    response.tookArgument = true ;
+                } else {
+                    response.opts[flag] = true;
+                }
+            }
         }
 
-        return opts ;
+        return response ;
     }
 
     #isChromeAction(str) {

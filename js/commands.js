@@ -1036,7 +1036,10 @@ function getFormattedDate(timestamp) {
 }
 
 function getMillisFromDateStr(dateStr) {
-    if(!dateStr.match(/^\d{4}-\d{2}-\d{2}( \d{2}:\d{2}(:\d{2})?)?$/))
-        throw "Date input must match the format YYYY-MM-DD [HH:MM[:SS]]" ;
-    return Date.parse(dateStr);
+    if(!dateStr.match(/^\d{4}-\d{2}-\d{2}(-\d{2}:\d{2}(:\d{2})?)?$/))
+        throw `Date input ${dateStr} does not match the format YYYY-MM-DD-[HH:MM[:SS]]\n` +
+              "Examples:\n  2024-03-15\n  2024-03-15-16:15\n  2024-03-15-16:15:30" ;
+    return Date.parse(
+        dateStr.replace(/^(\d{4}-\d{2}-\d{2})(-(\d{2}:\d{2})(:\d{2})?)?$/, "$1 $3$4")
+    ) ;
 }
