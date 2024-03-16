@@ -197,8 +197,8 @@ async function assignmentCmd(args) {
     if( !name )
         return await cmdErr( this,  "Syntax error; missing variable name.", 1 ) ;
 
-    await this.setLocalStorage() ;
     this.terminal.program.variables[name] = value ;
+    await this.setLocalStorage() ;
     this.terminal.status = 0 ;
     return value ;
 }
