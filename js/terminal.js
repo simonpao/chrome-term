@@ -249,7 +249,8 @@ class ChromeTerminal {
         $(`.char-row-${this.terminal.y} .char-box-${this.terminal.x}`).html(this.terminal.display.carrot) ;
 
         return new Promise((resolve) => {
-            let userIn = [] ;
+            let userIn = this.loadUserInput() ;
+            this.saveUserInput(userIn) ;
             this.initListeners(this.parseInput.bind(this), userIn, resolve, this.specialKey.bind(this)) ;
         });
     }
@@ -270,7 +271,8 @@ class ChromeTerminal {
             if( $terminalInput.val() === "" ) {
                 this.logDebugInfo("e.which = " + e.which + "; e.keyCode = " + e.keyCode);
                 callback(e.keyCode, e.key, userIn, resolve, $terminalInput.is(":focus"), specialKey);
-                //this.saveDisplayInfo() ;
+                this.saveUserInput(userIn) ;
+                this.saveDisplayInfo() ;
             }
         }) ;
 
@@ -282,7 +284,8 @@ class ChromeTerminal {
                 callback(this.charToKeyCode(chars[i]), chars[i], userIn, resolve, false, specialKey);
             }
             $terminalInput.val("") ;
-            //this.saveDisplayInfo() ;
+            this.saveUserInput(userIn) ;
+            this.saveDisplayInfo() ;
         }) ;
 
     }
@@ -311,13 +314,14 @@ class ChromeTerminal {
 
     async parseInput(keyCode, char, userIn, resolve, limit, specialKey) {
         switch(keyCode) {
-            case 13:
+            case 13: // Carriage Return
                 this.removeListeners() ;
                 this.insertCarrot("") ;
                 await this.print("\n", 0) ;
                 resolve(userIn.join("")) ;
+                this.saveUserInput([]) ;
                 break ;
-            case 8:
+            case 8: // Backspace
                 this.insertCarrot("") ;
                 this.backspace() ;
                 this.insertCarrot(this.terminal.display.carrot);
@@ -338,6 +342,7 @@ class ChromeTerminal {
                     (keyCode > 185 && keyCode < 193)   || // ;=,-./` (in order)
                     (keyCode > 218 && keyCode < 223)) {   // [\]' (in order)
                     userIn.push(char);
+                    this.saveUserInput(userIn) ;
                     await this.print(char, 0);
                     this.insertCarrot(this.terminal.display.carrot);
                 }
@@ -388,6 +393,7 @@ class ChromeTerminal {
 
                 userIn.splice( 0, userIn.length ) ;
                 userIn.push(...res.split("")) ;
+                this.saveUserInput(userIn) ;
 
                 this.setCharPos(this.terminal.in.x, this.terminal.in.y) ;
                 await this.print(res) ;
@@ -477,6 +483,21 @@ class ChromeTerminal {
         }) ;
         localStorage.setItem(`${this.terminal.localStoragePrefix}--display`, jsonString);
         this.terminal.display.printPrompt = true ;
+    }
+
+    saveUserInput(userIn) {
+        localStorage.setItem(`${this.terminal.localStoragePrefix}--userInput`, JSON.stringify(userIn));
+    }
+
+    loadUserInput() {
+        try {
+            let userIn = JSON.parse(
+                localStorage.getItem(`${this.terminal.localStoragePrefix}--userInput`)
+            ) ;
+            return Array.isArray(userIn) ? userIn : [] ;
+        } catch(e) {
+            return [] ;
+        }
     }
 
     async sleep(timeout) {
