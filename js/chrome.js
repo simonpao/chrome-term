@@ -1436,13 +1436,28 @@ class EditBookmark {
         while(command.toUpperCase() !== "EXIT") {
             command = await this.userInput();
             let { cmd, action, flags, name, start } = await tokenizeCommandLineInput(
-                this.terminal, command.split(" ")
+                this.terminal,
+                command.split(" "),
+                { E: { lookForArgument: true}, S: { lookForArgument: true} },
+                { modifiers: ["E", "S"] }
             ) ;
 
             switch(cmd) {
                 case "P":
                 case "PRINT":
-                    await this.print(0, 4) ;
+                    flags.S = flags.S ? parseInt(flags.S) : 1 ;
+                    flags.E = flags.E ? parseInt(flags.E) : this.length ;
+
+                    if(isNaN(flags.S) || isNaN(flags.E)) {
+                        await this.terminal.println( "Invalid arguments" ) ;
+                    } else {
+                        await this.print(parseInt(flags.S), parseInt(flags.E)) ;
+                    }
+                    break ;
+                case "H":
+                case "HELP":
+                    await this.terminal.println( "Available commands are:" ) ;
+                    await printList( this.terminal, ["PRINT", "HELP", "EXIT"], "", false ) ;
                     break ;
             }
         }
@@ -1507,11 +1522,16 @@ class EditBookmark {
     }
 
     async print(start, end) {
-        for(let i=start; i <=end; i++) {
+        if(start < 1 || end > this.length || start > end) {
+            await this.terminal.println( "Invalid start or end value" ) ;
+            return ;
+        }
+        for(let i=start-1; i <=end-1; i++) {
             let color = this.contents[i].readOnly ? "red" : "white" ;
             await this.terminal.print( padWithZeros( (i+1).toString(), 3), 0, color ) ;
             await this.terminal.print( EditBookmark.separator, 0, color ) ;
             await this.terminal.println( this.contents[i].text, 0, color ) ;
+            this.linePointer = i+1 ;
         }
     }
 }
