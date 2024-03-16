@@ -1424,19 +1424,27 @@ class EditBookmark {
                 { text: bookmark.id, attr: "id", readOnly: true},
                 { text: bookmark.parentId, attr: "parentId", readOnly: true},
                 { text: bookmark.title, attr: "title", readOnly: false},
-                { text: bookmark.url, attr: "url", readOnly: false},
+                { text: bookmark.type === "dir" ? "N/A" : bookmark.url, attr: "url", readOnly: bookmark.type === "dir"},
                 { text: getFormattedDate(bookmark.dateAdded), attr: "dateAdded", readOnly: true}
             ]
         } ;
     }
 
     async edit() {
-        await this.print(0, 4) ;
-
         let command = ""
         this.terminal.terminal.in = { x: this.terminal.x, y: this.terminal.y } ;
         while(command.toUpperCase() !== "EXIT") {
             command = await this.userInput();
+            let { cmd, action, flags, name, start } = await tokenizeCommandLineInput(
+                this.terminal, command.split(" ")
+            ) ;
+
+            switch(cmd) {
+                case "P":
+                case "PRINT":
+                    await this.print(0, 4) ;
+                    break ;
+            }
         }
 
         return {

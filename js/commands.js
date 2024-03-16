@@ -892,7 +892,7 @@ async function tokenizeCommandLineInput(terminal, args, options = {}, possibleFl
 
     // Start processing flags
     for(let i = startIndex; i < args.length; i++) {
-        if(isFlags(args[i])) {
+        if(isFlags(args[i], possibleFlags.modifiers)) {
             let newFlags = parseFlags(args, i, possibleFlags, tokenOptions) ;
             parsed.flags = mergeFlags(parsed.flags, newFlags.opts) ;
             startIndex++ ;
@@ -1128,8 +1128,10 @@ function spaces(num, char = " ") {
     return spaces ;
 }
 
-function isFlags(str) {
-    return str?.startsWith("-") ;
+function isFlags(str, modifiers) {
+    let letters = modifiers.join("") ;
+    let regex = new RegExp(`^-[${letters}]+$`) ;
+    return str?.toUpperCase()?.match(regex) ;
 }
 
 function getFormattedDate(timestamp) {
