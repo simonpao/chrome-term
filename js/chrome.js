@@ -1436,7 +1436,11 @@ class EditBookmark {
     async edit() {
         let command = ""
         this.terminal.terminal.in = { x: this.terminal.x, y: this.terminal.y } ;
-        while(command.toUpperCase() !== "EXIT") {
+
+        while(command.toUpperCase() !== "Q" &&
+              command.toUpperCase() !== "QUIT")
+        {
+            command = await this.userInput();
             await this.#processCommand(command) ;
         }
 
@@ -1500,7 +1504,6 @@ class EditBookmark {
     }
 
     async #processCommand(command) {
-        command = await this.userInput();
         let { cmd, action, flags, name, start } = await tokenizeCommandLineInput(
             this.terminal,
             command.split(" "),
@@ -1523,7 +1526,11 @@ class EditBookmark {
             case "H":
             case "HELP":
                 await this.terminal.println( "Available commands are:" ) ;
-                await printList( this.terminal, ["PRINT", "HELP", "EXIT"], "", false ) ;
+                await printList(
+                    this.terminal,
+                    ["PRINT", "GOTO", "TOP", "APPEND", "REPLACE", "CHANGE", "SAVE", "HELP", "QUIT"],
+                    "", false
+                ) ;
                 break ;
             case "G":
             case "GOTO":
