@@ -974,11 +974,15 @@ function extractVarFromArgs(terminal, args) {
     }
     for( ; i < args.length ; i++) {
         response.value += args[i] ;
-        if(response.mode === VAR_MODE_EXPR && response.value.charAt(response.value.length-1) === ")")  {
+        if(response.mode === VAR_MODE_EXPR &&
+           !(parseInt(i) === response.start && response.value.length === 1) &&
+           response.value.charAt(response.value.length-1) === ")")  {
             valid = true ;
             break ;
         }
-        if(response.mode === VAR_MODE_STRING && response.value.charAt(response.value.length-1) === "\"") {
+        if(response.mode === VAR_MODE_STRING &&
+           !(parseInt(i) === response.start && response.value.length === 1) &&
+           response.value.charAt(response.value.length-1) === "\"") {
             valid = true ;
             break ;
         }
