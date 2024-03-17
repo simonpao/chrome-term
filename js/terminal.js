@@ -424,13 +424,15 @@ class ChromeTerminal {
 
         let cmd = args[0].toUpperCase() ;
         if( typeof this.terminal.registeredCmd[cmd] !== "undefined" ) {
-            this.terminal.display.cmdHistory.stack = command ;
+            if(!this.terminal.program.suppressOutput)
+                this.terminal.display.cmdHistory.stack = command ;
             return await this.terminal.registeredCmd[cmd].callback(args) ;
         }
 
         // Check if it's an alias
         if( typeof this.terminal.program.aliases[cmd] !== "undefined" ) {
-            this.terminal.display.cmdHistory.stack = command ;
+            if(!this.terminal.program.suppressOutput)
+                this.terminal.display.cmdHistory.stack = command ;
             return await run( this, this.terminal.program.aliases[cmd] ) ;
         }
 

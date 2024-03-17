@@ -164,38 +164,27 @@ function registerDefaultCommands(terminal) {
 }
 
 async function assignmentCmd(args) {
-    let name = "", value = "", variable = {} ;
+    let name = "", value = "" ;
 
     try {
-        variable = extractVarFromArgs(this, args.slice(1,args.length-2)) ;
+        let tokens = await tokenizeString(this, args.join(" ")) ;
+        args = await evalTokens(this, tokens.args, tokens.tokens) ;
     } catch(e) {
-        return await cmdErr( this,  e, 1 ) ;
+        return await cmdErr( this,  `Runtime error; ${e}.`, 1 ) ;
     }
 
-    if(args.length < 4)
-        return await cmdErr( this,  "Syntax error; ASSIGN requires at least four arguments.", 1 ) ;
-    if(args[args.length-2].toUpperCase() !== "TO")
+    if(args.length !== 4)
+        return await cmdErr( this,  "Syntax error; ASSIGN takes four arguments.", 1 ) ;
+    if(args[2].toUpperCase() !== "TO")
         return await cmdErr( this,  "Syntax error; second argument of ASSIGN must be TO.", 1 ) ;
-    name = args[args.length-1] ;
+
+    name = args[3] ;
     if(name.charAt(0) === "$")
         return await cmdErr( this,  "Syntax error; variable name cannot begin with $.", 1 ) ;
-
-    switch(variable.mode) {
-        case VAR_MODE_NONE:
-        case VAR_MODE_VAR:
-            if(args.length > 4)
-                return await cmdErr( this,  "Syntax error; ASSIGN has too many arguments.", 1 ) ;
-            break ;
-    }
-
-    try {
-        value = await evalExpr( this, variable.value, variable.mode) ;
-    } catch(e) {
-        return await cmdErr( this,  e, 1 ) ;
-    }
-
     if( !name )
         return await cmdErr( this,  "Syntax error; missing variable name.", 1 ) ;
+
+    value = args[1] ;
 
     this.terminal.program.variables[name] = value ;
     await this.setLocalStorage() ;
@@ -359,7 +348,13 @@ async function logarithmCmd(args) {
 }
 
 async function mathCommon(terminal, name, args) {
-    args = await replaceVarsInArgs(terminal, args) ;
+    try {
+        let tokens = await tokenizeString(this, args.join(" ")) ;
+        args = await evalTokens(this, tokens.args, tokens.tokens) ;
+    } catch(e) {
+        return await cmdErr( this,  e, 1 ) ;
+    }
+
     if(args.length !== 3)
         throw "Syntax error; " + name + " requires two arguments."
     if(isNaN(args[1]) || isNaN(args[2]))
@@ -368,7 +363,8 @@ async function mathCommon(terminal, name, args) {
 
 async function equalsCmd(args) {
     try {
-        args = await replaceVarsInArgs(this, args) ;
+        let tokens = await tokenizeString(this, args.join(" ")) ;
+        args = await evalTokens(this, tokens.args, tokens.tokens) ;
     } catch(e) {
         return await cmdErr( this,  e, 1 ) ;
     }
@@ -387,13 +383,14 @@ async function equalsCmd(args) {
 
 async function lessThanCmd(args) {
     try {
-        args = await replaceVarsInArgs(this, args) ;
+        let tokens = await tokenizeString(this, args.join(" ")) ;
+        args = await evalTokens(this, tokens.args, tokens.tokens) ;
     } catch(e) {
         return await cmdErr( this,  e, 1 ) ;
     }
 
     if(args.length !== 3)
-        return await cmdErr( this,  "Syntax error; EQUALS requires two arguments.", 1 ) ;
+        return await cmdErr( this,  "Syntax error; LT requires two arguments.", 1 ) ;
 
     let out = "FALSE" ;
     if(args[1].toString() < args[2].toString())
@@ -406,13 +403,14 @@ async function lessThanCmd(args) {
 
 async function greaterThanCmd(args) {
     try {
-        args = await replaceVarsInArgs(this, args) ;
+        let tokens = await tokenizeString(this, args.join(" ")) ;
+        args = await evalTokens(this, tokens.args, tokens.tokens) ;
     } catch(e) {
         return await cmdErr( this,  e, 1 ) ;
     }
 
     if(args.length !== 3)
-        return await cmdErr( this,  "Syntax error; EQUALS requires two arguments.", 1 ) ;
+        return await cmdErr( this,  "Syntax error; GT requires two arguments.", 1 ) ;
 
     let out = "FALSE" ;
     if(args[1].toString() > args[2].toString())
@@ -425,7 +423,8 @@ async function greaterThanCmd(args) {
 
 async function helpCmd(args) {
     try {
-        args = await replaceVarsInArgs(this, args) ;
+        let tokens = await tokenizeString(this, args.join(" ")) ;
+        args = await evalTokens(this, tokens.args, tokens.tokens) ;
     } catch(e) {
         return await cmdErr( this,  e, 1 ) ;
     }
@@ -469,7 +468,8 @@ async function helpCmd(args) {
 
 async function printCmd(args) {
     try {
-        args = await replaceVarsInArgs(this, args) ;
+        let tokens = await tokenizeString(this, args.join(" ")) ;
+        args = await evalTokens(this, tokens.args, tokens.tokens) ;
     } catch(e) {
         return await cmdErr( this,  e, 1 ) ;
     }
@@ -622,7 +622,8 @@ async function newCmd(args) {
 
 async function gotoCmd(args) {
     try {
-        args = await replaceVarsInArgs(this, args) ;
+        let tokens = await tokenizeString(this, args.join(" ")) ;
+        args = await evalTokens(this, tokens.args, tokens.tokens) ;
     } catch(e) {
         return await cmdErr( this,  e, 1 ) ;
     }
@@ -636,7 +637,8 @@ async function gotoCmd(args) {
 
 async function setCursorCmd(args) {
     try {
-        args = await replaceVarsInArgs(this, args) ;
+        let tokens = await tokenizeString(this, args.join(" ")) ;
+        args = await evalTokens(this, tokens.args, tokens.tokens) ;
         this.setCharPos(args[1], args[2]);
         this.terminal.status = 0 ;
         return "["+this.terminal.x+","+this.terminal.y+"]" ;
@@ -647,7 +649,8 @@ async function setCursorCmd(args) {
 
 async function colorCmd(args) {
     try {
-        args = await replaceVarsInArgs(this, args) ;
+        let tokens = await tokenizeString(this, args.join(" ")) ;
+        args = await evalTokens(this, tokens.args, tokens.tokens) ;
     } catch(e) {
         return await cmdErr( this,  e, 1 ) ;
     }
@@ -683,7 +686,8 @@ async function exitCmd() {
 
 async function rndCmd(args) {
     try {
-        args = await replaceVarsInArgs(this, args) ;
+        let tokens = await tokenizeString(this, args.join(" ")) ;
+        args = await evalTokens(this, tokens.args, tokens.tokens) ;
     } catch(e) {
         return await cmdErr( this,  e, 1 ) ;
     }
@@ -703,7 +707,8 @@ async function rndCmd(args) {
 
 async function systemCmd(args) {
     try {
-        args = await replaceVarsInArgs(this, args) ;
+        let tokens = await tokenizeString(this, args.join(" ")) ;
+        args = await evalTokens(this, tokens.args, tokens.tokens) ;
     } catch(e) {
         return await cmdErr( this,  e, 1 ) ;
     }
@@ -747,7 +752,8 @@ async function systemCmd(args) {
 
 async function moveCmd(args) {
     try {
-        args = await replaceVarsInArgs(this, args) ;
+        let tokens = await tokenizeString(this, args.join(" ")) ;
+        args = await evalTokens(this, tokens.args, tokens.tokens) ;
     } catch(e) {
         return await cmdErr( this,  e, 1 ) ;
     }
@@ -776,7 +782,8 @@ async function moveCmd(args) {
 
 async function deleteCmd(args) {
     try {
-        args = await replaceVarsInArgs(this, args) ;
+        let tokens = await tokenizeString(this, args.join(" ")) ;
+        args = await evalTokens(this, tokens.args, tokens.tokens) ;
     } catch(e) {
         return await cmdErr( this,  e, 1 ) ;
     }
@@ -826,34 +833,124 @@ async function cmdErr(terminal, msg, code) {
     return "ERROR" ;
 }
 
-async function replaceVarsInArgs(terminal, args) {
-    terminal.logDebugInfo("replaceVarsInArgs(terminal, args); Input args = " + args) ;
-    let variable = {}, i = 0 ;
-    while(i < args.length) {
-        variable = extractVarFromArgs(terminal, args.slice(i, args.length));
-        i += variable.end-variable.start ;
-        switch (variable.mode) {
-            case VAR_MODE_STRING:
-            case VAR_MODE_VAR:
-                args.splice( variable.start, variable.end-variable.start+1, variable.value ) ;
-                i -= variable.end-variable.start ;
-                break;
-            case VAR_MODE_EXPR:
-                terminal.terminal.program.suppressOutput = true;
-                variable.value = await terminal.processCmd(variable.value);
-                terminal.terminal.program.suppressOutput = false;
-                if (terminal.returnStatus() !== 0) {
-                    throw "Runtime error; expression evaluation failed." ;
+function extractQuotes(string) {
+    let response = {
+        string: "",
+        tokens: []
+    } ;
+    let index = 0 ;
+    let match = string.match(/".*?"/g) ;
+    if(match) for( let text of match) {
+        let replace = `%quote%${index}%quote%` ;
+        string = string.replace(text, replace) ;
+        text = text.slice(1, text.length-1) ;
+        response.tokens[index] = { replace, text, type: "quote" } ;
+        index ++ ;
+    }
+    response.string = string ;
+    return response ;
+}
+
+function extractParens(string) {
+    let response = {
+        string: "",
+        tokens: []
+    } ;
+    let match ;
+    let index = 0 ;
+    do {
+        match = string.match(/\([^(]*?\)/g) ;
+        if(match) for( let text of match) {
+            let replace = `%paren%${index}%paren%` ;
+            string = string.replace(text, replace) ;
+            text = text.slice(1, text.length-1) ;
+            response.tokens[index] = { replace, text, type: "paren" } ;
+            index ++ ;
+        }
+    } while(match !== null) ;
+    response.string = string ;
+    return response ;
+}
+
+function extractVars(string) {
+    let response = {
+        string: "",
+        tokens: []
+    } ;
+    let index = 0 ;
+    let match = string.match(/(\$\w+)/g) ;
+    if(match) for( let text of match) {
+        let replace = `%var%${index}%var%` ;
+        string = string.replace(text, replace) ;
+        text = text.slice(1, text.length) ;
+        response.tokens[index] = { replace, text, type: "var" } ;
+        index ++ ;
+    }
+    response.string = string ;
+    return response ;
+}
+
+async function tokenizeString(terminal, string) {
+    let vars = extractVars(string) ;
+    string = vars.string ;
+
+    let quotes = extractQuotes(string) ;
+    string = quotes.string ;
+
+    if(string.match(/"/))
+        throw "Unmatched opening double quote." ;
+
+    let parens = extractParens(string) ;
+    string = parens.string ;
+
+    if(string.match(/\(/))
+        throw "Unmatched opening parenthesis." ;
+
+    if(string.match(/\)/))
+        throw "Unmatched closing parenthesis." ;
+
+    let args = string.split(" ") ;
+
+    return {
+        tokens: [
+            ...parens.tokens,
+            ...quotes.tokens,
+            ...vars.tokens
+        ],
+        string,
+        args
+    } ;
+}
+
+async function evalTokens(terminal, args, tokens) {
+    for(let i = 0; i < args.length; i++) {
+        for(let j = 0; j < tokens.length; j++) {
+            let regex = new RegExp(tokens[j].replace) ;
+            if(args[i].match(regex)) {
+                switch(tokens[j].type) {
+                    case "var":
+                        let name = tokens[j].text ;
+                        if( typeof terminal.terminal.program.variables[name] === "undefined" )
+                            throw "Reference error; variable " + name + " does not exist." ;
+                        args[i] = args[i].replace(regex, terminal.terminal.program.variables[name]) ;
+                        break ;
+                    case "quote":
+                        args[i] = (await evalTokens(terminal, [tokens[j].text], tokens))[0] ;
+                        break ;
+                    case "paren":
+                        let command = (await evalTokens(terminal, tokens[j].text.split(" "), tokens)).join(" ") ;
+                        terminal.terminal.program.suppressOutput = true;
+                        args[i] = await terminal.processCmd(command);
+                        terminal.terminal.program.suppressOutput = false;
+                        if (terminal.returnStatus() !== 0) {
+                            throw "Runtime error; expression evaluation failed." ;
+                        }
+                        break ;
                 }
-                args.splice( variable.start, variable.end-variable.start+1, variable.value ) ;
-                i -= variable.end-variable.start ;
-                break;
-            default:
-                i = args.length ;
-                break;
+            }
         }
     }
-    terminal.logDebugInfo("replaceVarsInArgs(terminal, args); Output args = " + args) ;
+
     return args ;
 }
 
@@ -876,7 +973,8 @@ async function tokenizeCommandLineInput(terminal, args, options = {}, possibleFl
     }
 
     try {
-        args = await replaceVarsInArgs(terminal, args) ;
+        let tokens = await tokenizeString(this, args.join(" ")) ;
+        args = await evalTokens(this, tokens.args, tokens.tokens) ;
     } catch(e) {
         return await cmdErr( this,  `Runtime error; ${e}.`, 1 ) ;
     }
