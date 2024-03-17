@@ -628,7 +628,7 @@ class ChromeCommands {
                 this.terminal.terminal.status = 0 ;
                 await this.terminal.println( result ) ;
                 return result ;
-            } else {
+            } else if(ChromeCommands.flags.edit.includes(action)) {
                 try {
                     let editor = new EditBookmark(
                         this.terminal,
@@ -1414,6 +1414,7 @@ class EditBookmark {
         let { length, lines } = this.#convertBookmarkToFile(bookmark) ;
         this.contents = lines ;
         this.length = length ;
+        this.edited = false ;
         this.linePointer = 1 ;
     }
 
@@ -1421,11 +1422,13 @@ class EditBookmark {
         return {
             length: 5,
             lines: [
-                { text: bookmark.id, attr: "id", readOnly: true},
-                { text: bookmark.parentId, attr: "parentId", readOnly: true},
-                { text: bookmark.title, attr: "title", readOnly: false},
-                { text: bookmark.type === "dir" ? "N/A" : bookmark.url, attr: "url", readOnly: bookmark.type === "dir"},
-                { text: getFormattedDate(bookmark.dateAdded), attr: "dateAdded", readOnly: true}
+                { text: bookmark.id, attr: "id", readOnly: true, edited: false },
+                { text: bookmark.parentId, attr: "parentId", readOnly: true, edited: false },
+                { text: bookmark.title, attr: "title", readOnly: false, edited: false },
+                { text: bookmark.type === "dir" ? "N/A" : bookmark.url, attr: "url",
+                    readOnly: bookmark.type === "dir", edited: false },
+                { text: getFormattedDate(bookmark.dateAdded), attr: "dateAdded",
+                    readOnly: true, edited: false }
             ]
         } ;
     }
@@ -1434,37 +1437,12 @@ class EditBookmark {
         let command = ""
         this.terminal.terminal.in = { x: this.terminal.x, y: this.terminal.y } ;
         while(command.toUpperCase() !== "EXIT") {
-            command = await this.userInput();
-            let { cmd, action, flags, name, start } = await tokenizeCommandLineInput(
-                this.terminal,
-                command.split(" "),
-                { E: { lookForArgument: true}, S: { lookForArgument: true} },
-                { modifiers: ["E", "S"] }
-            ) ;
-
-            switch(cmd) {
-                case "P":
-                case "PRINT":
-                    flags.S = flags.S ? parseInt(flags.S) : 1 ;
-                    flags.E = flags.E ? parseInt(flags.E) : this.length ;
-
-                    if(isNaN(flags.S) || isNaN(flags.E)) {
-                        await this.terminal.println( "Invalid arguments" ) ;
-                    } else {
-                        await this.print(parseInt(flags.S), parseInt(flags.E)) ;
-                    }
-                    break ;
-                case "H":
-                case "HELP":
-                    await this.terminal.println( "Available commands are:" ) ;
-                    await printList( this.terminal, ["PRINT", "HELP", "EXIT"], "", false ) ;
-                    break ;
-            }
+            await this.#processCommand(command) ;
         }
 
         return {
             result: {
-                updated: false
+                updated: this.edited
             },
             contents: {
                 title: this.contents[ this.contents.findIndex(item => item.attr === "title") ]?.text,
@@ -1521,6 +1499,69 @@ class EditBookmark {
         this.terminal.terminal.in = { x: this.terminal.terminal.x, y: this.terminal.terminal.y } ;
     }
 
+    async #processCommand(command) {
+        command = await this.userInput();
+        let { cmd, action, flags, name, start } = await tokenizeCommandLineInput(
+            this.terminal,
+            command.split(" "),
+            { E: { lookForArgument: true}, S: { lookForArgument: true} },
+            { modifiers: ["E", "S"] }
+        ) ;
+
+        switch(cmd) {
+            case "P":
+            case "PRINT":
+                flags.S = flags.S ? parseInt(flags.S) : this.linePointer ;
+                flags.E = flags.E ? parseInt(flags.E) : this.length ;
+
+                if(isNaN(flags.S) || isNaN(flags.E)) {
+                    await this.terminal.println( "Invalid arguments" ) ;
+                } else {
+                    await this.print(parseInt(flags.S), parseInt(flags.E)) ;
+                }
+                break ;
+            case "H":
+            case "HELP":
+                await this.terminal.println( "Available commands are:" ) ;
+                await printList( this.terminal, ["PRINT", "HELP", "EXIT"], "", false ) ;
+                break ;
+            case "G":
+            case "GOTO":
+                let linePointer = parseInt(name) ;
+                if(isNaN(linePointer)) {
+                    await this.terminal.println( "Invalid argument" ) ;
+                } else {
+                    if(linePointer < 1 || linePointer > this.length) {
+                        await this.terminal.println( "Invalid line number" ) ;
+                        return ;
+                    }
+                    this.linePointer = linePointer ;
+                    await this.print(linePointer, linePointer) ;
+                }
+                break ;
+            case "T":
+            case "TOP":
+                await this.terminal.println( "TOP" ) ;
+                break ;
+            case "A":
+            case "APPEND":
+                await this.terminal.println( "APPEND" ) ;
+                break ;
+            case "R":
+            case "REPLACE":
+                await this.terminal.println( "REPLACE" ) ;
+                break ;
+            case "C":
+            case "CHANGE":
+                await this.terminal.println( "CHANGE" ) ;
+                break ;
+            case "S":
+            case "SAVE":
+                await this.terminal.println( "CHANGE" ) ;
+                break ;
+        }
+    }
+
     async print(start, end) {
         if(start < 1 || end > this.length || start > end) {
             await this.terminal.println( "Invalid start or end value" ) ;
@@ -1531,7 +1572,6 @@ class EditBookmark {
             await this.terminal.print( padWithZeros( (i+1).toString(), 3), 0, color ) ;
             await this.terminal.print( EditBookmark.separator, 0, color ) ;
             await this.terminal.println( this.contents[i].text, 0, color ) ;
-            this.linePointer = i+1 ;
         }
     }
 }
