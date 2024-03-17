@@ -1024,6 +1024,9 @@ class ChromeCommands {
                 return ;
             }
             chrome.bookmarks.update(id, updates, res => resolve(res));
+            this.bookmarks[this.bookmarks.findIndex( item => item.id === id )].title = updates.title ;
+            if(updates.url)
+                this.bookmarks[this.bookmarks.findIndex( item => item.id === id )].url = updates.url ;
         }) ;
     }
 
@@ -1415,6 +1418,7 @@ class EditBookmark {
         this.contents = lines ;
         this.length = length ;
         this.edited = false ;
+        this.saved = false ;
         this.linePointer = 1 ;
     }
 
@@ -1437,20 +1441,19 @@ class EditBookmark {
         let command = ""
         this.terminal.terminal.in = { x: this.terminal.x, y: this.terminal.y } ;
 
-        while(command.toUpperCase() !== "Q" &&
-              command.toUpperCase() !== "QUIT")
-        {
+        while(command.toUpperCase() !== "QUIT") {
             command = await this.userInput();
-            await this.#processCommand(command) ;
+            command = await this.#processCommand(command) ;
         }
 
+        let url = this.contents[ this.contents.findIndex(item => item.attr === "url") ] ;
         return {
             result: {
-                updated: this.edited
+                updated: this.saved
             },
             contents: {
                 title: this.contents[ this.contents.findIndex(item => item.attr === "title") ]?.text,
-                url: this.contents[ this.contents.findIndex(item => item.attr === "url") ]?.text
+                url: url.readOnly ? null : url.text
             }
         } ;
     }
@@ -1508,7 +1511,7 @@ class EditBookmark {
             this.terminal,
             command.split(" "),
             { E: { lookForArgument: true}, S: { lookForArgument: true} },
-            { modifiers: ["E", "S"] }
+            { modifiers: ["E", "F", "P", "S"] }
         ) ;
 
         switch(cmd) {
@@ -1534,25 +1537,16 @@ class EditBookmark {
                 break ;
             case "G":
             case "GOTO":
-                let linePointer = parseInt(name) ;
-                if(isNaN(linePointer)) {
-                    await this.terminal.println( "Invalid argument" ) ;
-                } else {
-                    if(linePointer < 1 || linePointer > this.length) {
-                        await this.terminal.println( "Invalid line number" ) ;
-                        return ;
-                    }
-                    this.linePointer = linePointer ;
-                    await this.print(linePointer, linePointer) ;
-                }
+                await this.goto(parseInt(name), flags) ;
                 break ;
             case "T":
             case "TOP":
-                await this.terminal.println( "TOP" ) ;
+                this.linePointer = 1 ;
+                await this.print(this.linePointer, this.linePointer) ;
                 break ;
             case "A":
             case "APPEND":
-                await this.terminal.println( "APPEND" ) ;
+                await this.append(this.linePointer, name, flags) ;
                 break ;
             case "R":
             case "REPLACE":
@@ -1562,10 +1556,46 @@ class EditBookmark {
             case "CHANGE":
                 await this.terminal.println( "CHANGE" ) ;
                 break ;
-            case "S":
-            case "SAVE":
-                await this.terminal.println( "CHANGE" ) ;
+            case "W":
+            case "WRITE":
+                await this.terminal.println( "WRITE" ) ;
                 break ;
+            case "Q":
+            case "QUIT":
+                if(this.edited && !flags.F) {
+                    await this.terminal.println( "Unsaved changes - use -f flag to quit without writing" ) ;
+                    command = "" ;
+                } else {
+                    command = "QUIT" ;
+                }
+                break ;
+        }
+
+        return command ;
+    }
+
+    async append(lineNum, text, flags) {
+        let index = lineNum - 1 ;
+        if(this.contents[index].readOnly) {
+            await this.terminal.println( `Line ${this.linePointer} is read only.` ) ;
+            return ;
+        }
+        this.contents[index].text += text ;
+        this.edited = true ;
+        this.contents[index].edited = true ;
+        await this.print(this.linePointer, this.linePointer) ;
+    }
+
+    async goto(lineNum, flags) {
+        if(isNaN(lineNum)) {
+            await this.terminal.println( "Invalid argument" ) ;
+        } else {
+            if(lineNum < 1 || lineNum > this.length) {
+                await this.terminal.println( "Invalid line number" ) ;
+                return ;
+            }
+            this.linePointer = lineNum ;
+            if(flags.P) await this.print(lineNum, lineNum) ;
         }
     }
 
