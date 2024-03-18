@@ -1480,17 +1480,20 @@ class EditBookmark {
                 this.terminal.insertCarrot("") ;
                 await this.terminal.print("\n", 0) ;
                 resolve(userIn.join("")) ;
+                this.terminal.saveUserInput([]) ;
                 break ;
             case 8: // Backspace
                 this.terminal.insertCarrot("") ;
                 this.terminal.backspace() ;
                 this.terminal.insertCarrot(this.terminal.terminal.display.carrot);
                 userIn.pop() ;
+                this.terminal.saveUserInput(userIn) ;
                 break ;
             default:
                 if( limit ) break ;
                 if (this.terminal.isValidAsciiCode(keyCode)) {
                     userIn.push(char);
+                    this.terminal.saveUserInput(userIn) ;
                     await this.terminal.print(char, 0);
                     this.terminal.insertCarrot(this.terminal.terminal.display.carrot);
                 }
@@ -1550,15 +1553,21 @@ class EditBookmark {
                 break ;
             case "R":
             case "REPLACE":
-                await this.terminal.println( "REPLACE" ) ;
+                await this.replace(this.linePointer, name, flags) ;
                 break ;
             case "C":
             case "CHANGE":
-                await this.terminal.println( "CHANGE" ) ;
+                await this.change(this.linePointer, name, flags) ;
                 break ;
             case "W":
             case "WRITE":
-                await this.terminal.println( "WRITE" ) ;
+                if(!this.edited) {
+                    await this.terminal.println( "Exiting with no changes." ) ;
+                    command = "QUIT" ;
+                } else {
+                    this.saved = true ;
+                    command = "QUIT" ;
+                }
                 break ;
             case "Q":
             case "QUIT":
@@ -1572,6 +1581,39 @@ class EditBookmark {
         }
 
         return command ;
+    }
+
+    async change(lineNum, name, flags) {
+        let index = lineNum - 1 ;
+        if(this.contents[index].readOnly) {
+            await this.terminal.println( `Line ${this.linePointer} is read only.` ) ;
+            return ;
+        }
+        if(!flags.S) {
+            await this.terminal.println( `Specify a search string with -s flag.` ) ;
+            return ;
+        }
+        let replacement = name ;
+        if(!replacement) {
+            replacement = flags.E ;
+        }
+        this.contents[index].text =
+            this.contents[index].text.replace(new RegExp(flags.S), replacement) ;
+        this.edited = true ;
+        this.contents[index].edited = true ;
+        await this.print(this.linePointer, this.linePointer) ;
+    }
+
+    async replace(lineNum, text, flags) {
+        let index = lineNum - 1 ;
+        if(this.contents[index].readOnly) {
+            await this.terminal.println( `Line ${this.linePointer} is read only.` ) ;
+            return ;
+        }
+        this.contents[index].text = text ;
+        this.edited = true ;
+        this.contents[index].edited = true ;
+        await this.print(this.linePointer, this.linePointer) ;
     }
 
     async append(lineNum, text, flags) {

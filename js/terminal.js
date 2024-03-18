@@ -326,6 +326,7 @@ class ChromeTerminal {
                 this.backspace() ;
                 this.insertCarrot(this.terminal.display.carrot);
                 userIn.pop() ;
+                this.saveUserInput(userIn) ;
                 break ;
             case 9:  // Tab
             case 38: // Up Arrow

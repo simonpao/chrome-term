@@ -349,10 +349,10 @@ async function logarithmCmd(args) {
 
 async function mathCommon(terminal, name, args) {
     try {
-        let tokens = await tokenizeString(this, args.join(" ")) ;
-        args = await evalTokens(this, tokens.args, tokens.tokens) ;
+        let tokens = await tokenizeString( terminal, args.join(" ")) ;
+        args = await evalTokens( terminal, tokens.args, tokens.tokens) ;
     } catch(e) {
-        return await cmdErr( this,  e, 1 ) ;
+        return await cmdErr( terminal,  e, 1 ) ;
     }
 
     if(args.length !== 3)
@@ -973,10 +973,10 @@ async function tokenizeCommandLineInput(terminal, args, options = {}, possibleFl
     }
 
     try {
-        let tokens = await tokenizeString(this, args.join(" ")) ;
-        args = await evalTokens(this, tokens.args, tokens.tokens) ;
+        let tokens = await tokenizeString( terminal, args.join(" ")) ;
+        args = await evalTokens( terminal, tokens.args, tokens.tokens) ;
     } catch(e) {
-        return await cmdErr( this,  `Runtime error; ${e}.`, 1 ) ;
+        return await cmdErr( terminal,  `Runtime error; ${e}.`, 1 ) ;
     }
 
     // Start tokenization at index 1
