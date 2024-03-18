@@ -1,5 +1,6 @@
 {
   "ADD": "Sum two numbers",
+  "ALIAS": "List, recall, or delete saved aliases",
   "ASSIGN": "Assign a value to a variable",
   "CLEAR": "Clear the screen",
   "CLR": "Clear the screen",

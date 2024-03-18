@@ -435,8 +435,12 @@ async function helpCmd(args) {
         if( typeof this.terminal.registeredCmd[cmd] !== "undefined" ) {
             let out = "" ;
             if( this.terminal.registeredCmd[cmd].help ) {
-                let helpText = await $.getJSON( this.terminal.registeredCmd[cmd].help ) ;
-                out += helpText[cmd] ;
+                try {
+                    let helpText = await $.getJSON(this.terminal.registeredCmd[cmd].help);
+                    out += helpText[cmd];
+                } catch(e) {
+                    out += "Failed to retrieve man file."
+                }
             }
 
             if( typeof this.terminal.registeredCmd[cmd].args !== "undefined" ) {
@@ -516,7 +520,12 @@ async function run(term, program) {
 
             let control = await term.processCmd(program[line]) ;
             if(control?.startsWith("GOTO:")) {
-                line = parseInt( control.split(":")[1] )-1 ;
+                line = parseInt( control.split(":")[1] ) ;
+
+                if(!program.hasOwnProperty(line) || !program[line])
+                    return await cmdErr( term,  `Invalid program line ${line} specified.`, 1 ) ;
+
+                line-- ;
                 stackLimit-- ;
                 if(!stackLimit)
                     return await cmdErr( term, "Stack limit exceeded.", term.returnStatus());
@@ -627,10 +636,6 @@ async function gotoCmd(args) {
     } catch(e) {
         return await cmdErr( this,  e, 1 ) ;
     }
-
-    if(!this.terminal.program.input.hasOwnProperty(parseInt(args[1])) ||
-       !this.terminal.program.input[parseInt(args[1])])
-        return await cmdErr( this,  `Invalid program line ${args[1]} specified.`, 1 ) ;
 
     return `GOTO:${args[1]}` ;
 }
@@ -1145,19 +1150,19 @@ async function printList(term, collection, attribute = "title", printPrompt = tr
     if(max < columns/4) {
         for(let t of titles) {
             out += t.text + spaces((columns / 4) - t.len) ;
-            await term.print(t.text + spaces((columns / 4) - t.len), 0, getColor(t.type));
+            await term.print(t.text + spaces((columns / 4) - t.len), term.terminal.defaultTimeout, getColor(t.type));
         }
     }
     else if(max < columns/3) {
         for(let t of titles) {
             out += t.text + spaces((columns / 3) - t.len) ;
-            await term.print(t.text + spaces((columns / 3) - t.len), 0, getColor(t.type));
+            await term.print(t.text + spaces((columns / 3) - t.len), term.terminal.defaultTimeout, getColor(t.type));
         }
     }
     else if(max < columns/2) {
         for(let t of titles) {
             out += t.text + spaces((columns / 2) - t.len) ;
-            await term.print(t.text + spaces((columns / 2) - t.len), 0, getColor(t.type));
+            await term.print(t.text + spaces((columns / 2) - t.len), term.terminal.defaultTimeout, getColor(t.type));
         }
     }
     else {
@@ -1165,7 +1170,7 @@ async function printList(term, collection, attribute = "title", printPrompt = tr
             out += t.text + "\n"
             await term.println(
                 padWithSpaces( t.text, term.terminal.columns-1 ),
-                0,
+                term.terminal.defaultTimeout,
                 getColor(t.type)
             );
         }
