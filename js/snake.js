@@ -60,7 +60,7 @@ async function snake(args) {
         await drawBorder();
         await updateScore() ;
         await placeApple() ;
-        await this.printAt(gameVars.d, gameVars.x, gameVars.y, 0) ;
+        await this.printAt(gameVars.d, gameVars.x, gameVars.y, 0, "teal") ;
     } catch(e) {
         let out = "An error occurred while setting up the game; error detail: " + e ;
         this.terminal.status = 1 ;
@@ -195,24 +195,24 @@ async function moveSnake(timestamp) {
 }
 
 async function drawBorder() {
-    await term.printAt("╔", 1, 1, term.terminal.defaultTimeout) ;
-    await term.printAt("╚", 1, parseInt(term.terminal.rows)-2, term.terminal.defaultTimeout) ;
-    await term.printAt("╗", parseInt(term.terminal.columns)-2, 1, term.terminal.defaultTimeout) ;
-    await term.printAt("╝", parseInt(term.terminal.columns)-2, parseInt(term.terminal.rows)-2, term.terminal.defaultTimeout) ;
+    await term.printAt("╔", 1, 1, term.terminal.defaultTimeout, "blue") ;
+    await term.printAt("╚", 1, parseInt(term.terminal.rows)-2, term.terminal.defaultTimeout, "blue") ;
+    await term.printAt("╗", parseInt(term.terminal.columns)-2, 1, term.terminal.defaultTimeout, "blue") ;
+    await term.printAt("╝", parseInt(term.terminal.columns)-2, parseInt(term.terminal.rows)-2, term.terminal.defaultTimeout, "blue") ;
 
     for(let i = 2; i < parseInt(term.terminal.rows)-2; i++ ) {
-        await term.printAt("║", 1, i, term.terminal.defaultTimeout) ;
-        await term.printAt("║", parseInt(term.terminal.columns)-2, i, term.terminal.defaultTimeout) ;
+        await term.printAt("║", 1, i, term.terminal.defaultTimeout, "blue") ;
+        await term.printAt("║", parseInt(term.terminal.columns)-2, i, term.terminal.defaultTimeout, "blue") ;
     }
 
     for(let i = 2; i < parseInt(term.terminal.columns)-2; i++ ) {
-        await term.printAt("═", i, 1, term.terminal.defaultTimeout) ;
-        await term.printAt("═", i, parseInt(term.terminal.rows)-2, term.terminal.defaultTimeout) ;
+        await term.printAt("═", i, 1, term.terminal.defaultTimeout, "blue") ;
+        await term.printAt("═", i, parseInt(term.terminal.rows)-2, term.terminal.defaultTimeout, "blue") ;
     }
 }
 
 async function drawSnake() {
-    await term.printAt(gameVars.d, gameVars.x, gameVars.y, 0) ;
+    await term.printAt(gameVars.d, gameVars.x, gameVars.y, 0, "teal") ;
 
     if(gameVars.x != gameVars.xLocs[0] || gameVars.y != gameVars.yLocs[0]) {
         await term.printAt(" ", gameVars.xLocs[gameVars.snakeLength-1], gameVars.yLocs[gameVars.snakeLength-1], 0) ;
@@ -230,7 +230,7 @@ async function drawSnake() {
         for(let i = 0; i < gameVars.snakeLength; i++) {
             gameVars.xLocs[i] = xTemp[i] ;
             gameVars.yLocs[i] = yTemp[i] ;
-            await term.printAt(gameVars.d, gameVars.xLocs[i], gameVars.yLocs[i], 0) ;
+            await term.printAt(gameVars.d, gameVars.xLocs[i], gameVars.yLocs[i], 0, "teal") ;
         }
     }
 }
@@ -238,7 +238,7 @@ async function drawSnake() {
 async function updateScore() {
     let scoreBoard = "Score: "+gameVars.score+" | Length: "+gameVars.snakeLength+" | Max Length: "+gameVars.maxLength
     if(term.terminal.columns <= 40) scoreBoard = "S: "+gameVars.score+" | L: "+gameVars.snakeLength+" | M: "+gameVars.maxLength
-    await term.printAt(scoreBoard, Math.floor((term.terminal.columns/2)-(scoreBoard.length/2)), parseInt(term.terminal.rows)-1, 0) ;
+    await term.printAt(scoreBoard, Math.floor((term.terminal.columns/2)-(scoreBoard.length/2)), parseInt(term.terminal.rows)-1, 0, "green") ;
 }
 
 async function placeApple() {
@@ -261,7 +261,7 @@ async function placeApple() {
     }
 
     gameVars.appleLocation = [col, row]
-    await term.printAt(gameVars.a, col, row, 0) ;
+    await term.printAt(gameVars.a, col, row, 0, "red") ;
 }
 
 async function detectAppleEat() {
