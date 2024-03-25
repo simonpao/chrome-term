@@ -75,6 +75,21 @@ body.loading {
     overflow: auto;
 }
 
+/* Blinking cursor */
+@keyframes blinking-cursor {
+    0%   { opacity: 100% }
+    49%  { opacity: 100% }
+    50%  { opacity: 0 }
+    100% { opacity: 0 }
+}
+
+.blink {
+    animation-name: blinking-cursor;
+    animation-duration: 1s;
+    animation-iteration-count: infinite;
+    animation-timing-function: linear;
+}
+
 /* Loading spinner */
 #loading-spinner {
     position: fixed;

@@ -12,7 +12,9 @@ class ChromeTerminal {
             prompt: "$\u0000",
             carrot: "█",
             color: "white",
+            printPath: true,
             path: "/",
+            printAccount: true,
             account: "Chrome",
             data: [],
             cmdHistory: new CommandHistoryStack(),
@@ -55,7 +57,7 @@ class ChromeTerminal {
             .html(
                 "<div id=\"terminal-window\"></div>" +
                 "<label style=\"display: block; opacity: 0;\">" +
-                "<input id=\"terminal-input\" type=\"text\" inputmode=\"text\" style=\"display:block; width:100%;\"/>" +
+                "<input id=\"terminal-input\" type=\"text\" inputmode=\"text\" style=\"display:block;\"/>" +
                 "</label>"
             );
 
@@ -63,11 +65,30 @@ class ChromeTerminal {
             $('#terminal-input').focus();
         }) ;
 
-        if(options.debugMode) {
-            this.terminal.debugMode = true ;
-            $terminalContainer.append(
-                $("<pre id='debug-output'></pre>").css("width", (12*columns) + "px" )
-            ) ;
+        if(typeof options["debugMode"] === "boolean") {
+            this.terminal.debugMode = options["debugMode"] ;
+            if(this.terminal.debugMode)
+                $terminalContainer.append(
+                    $("<pre id='debug-output'></pre>").css("width", (12*columns) + "px" )
+                ) ;
+        }
+
+        if(typeof options["promptChar"] === "string") {
+            this.terminal.display.prompt = `${options["promptChar"]}\u0000` ;
+        } else {
+            this.terminal.display.prompt = "$\u0000" ;
+        }
+
+        if(typeof options["printPath"] === "boolean") {
+            this.terminal.display.printPath = options["printPath"] ;
+        } else {
+            this.terminal.display.printPath = true ;
+        }
+
+        if(typeof options["printAccount"] === "boolean") {
+            this.terminal.display.printAccount = options["printAccount"] ;
+        } else {
+            this.terminal.display.printAccount = true ;
         }
 
         for(let y = 0 ; y < rows ; y++) {
@@ -85,8 +106,14 @@ class ChromeTerminal {
             if( tmpDisplay.display && typeof tmpDisplay.x === "number" &&
                 typeof tmpDisplay.y === "number" && tmpDisplay.in ) {
                 this.clr() ;
+                let prompt = this.terminal.display.prompt ;
+                let printPath = this.terminal.display.printPath ;
+                let printAccount = this.terminal.display.printAccount ;
                 this.terminal.display = tmpDisplay.display ;
                 this.terminal.display.cmdHistory = new CommandHistoryStack(tmpDisplay.display.cmdHistory) ;
+                this.terminal.display.prompt = prompt ;
+                this.terminal.display.printPath = printPath ;
+                this.terminal.display.printAccount = printAccount ;
                 this.terminal.x = tmpDisplay.x ;
                 this.terminal.y = tmpDisplay.y ;
                 this.terminal.in = tmpDisplay.in ;
@@ -184,7 +211,7 @@ class ChromeTerminal {
     }
 
     insertCarrot(carrot) {
-        $(`.char-row-${this.terminal.y} .char-box-${this.terminal.x}`).html(carrot);
+        $(`.char-row-${this.terminal.y} .char-box-${this.terminal.x}`).html(`<span class="blink">${carrot}</span>`);
     }
 
     async print(data, timeout, color) {
@@ -246,7 +273,7 @@ class ChromeTerminal {
         }
 
         this.saveDisplayInfo() ;
-        $(`.char-row-${this.terminal.y} .char-box-${this.terminal.x}`).html(this.terminal.display.carrot) ;
+        this.insertCarrot(this.terminal.display.carrot) ;
 
         return new Promise((resolve) => {
             let userIn = this.loadUserInput() ;
@@ -257,9 +284,14 @@ class ChromeTerminal {
 
     async printPrompt(prompt) {
         prompt = prompt ? prompt : this.terminal.display.prompt ;
-        await this.print(`${this.terminal.display.account}`, 0, "green");
-        await this.print(":", 0, "white");
-        await this.print(`~${this.terminal.display.path}`, 0, "blue");
+        if(this.terminal.display.printAccount) {
+            await this.print(`${this.terminal.display.account}`, this.terminal.defaultTimeout, "green");
+            if(this.terminal.display.printPath)
+                await this.print(":", 0, "white");
+        }
+        if(this.terminal.display.printPath) {
+            await this.print(`~${this.terminal.display.path}`, this.terminal.defaultTimeout, "blue");
+        }
         await this.print(prompt);
         this.terminal.in = { x: this.terminal.x, y: this.terminal.y } ;
     }
