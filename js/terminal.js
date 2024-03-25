@@ -132,16 +132,7 @@ class ChromeTerminal {
     }
 
     backspace() {
-        let x = this.terminal.x ;
-        let y = this.terminal.y ;
-
-
-        if(x === 0) {
-            if(y === 0) return false ;
-            y-- ;
-            x = this.terminal.columns ;
-        }
-        x-- ;
+        let { x, y } = this.getPreviousCharLoc() ;
 
         if(this.terminal.display.data[y][x].char === "\u0000")
             return false ;
@@ -150,6 +141,21 @@ class ChromeTerminal {
         this.terminal.x = x ;
         this.terminal.y = y ;
         return true ;
+    }
+
+    getPreviousCharLoc() {
+        let x = this.terminal.x ;
+        let y = this.terminal.y ;
+
+
+        if(x === 0) {
+            if(y === 0) return { x, y } ;
+            y-- ;
+            x = this.terminal.columns ;
+        }
+        x-- ;
+
+        return { x, y } ;
     }
 
     scrollTerminalContents() {
@@ -210,8 +216,15 @@ class ChromeTerminal {
         this.terminal.y = y ;
     }
 
-    insertCarrot(carrot) {
-        $(`.char-row-${this.terminal.y} .char-box-${this.terminal.x}`).html(`<span class="blink">${carrot}</span>`);
+    insertCarrot(carrot, backup = false) {
+        if(!backup) {
+            let $char = $(`.char-row-${this.terminal.y} .char-box-${this.terminal.x}`);
+            $char.html(`<span class="blink">${carrot}</span>`);
+        } else {
+            let { x, y } = this.getPreviousCharLoc() ;
+            let $char = $(`.char-row-${y} .char-box-${x}`);
+            $char.html('');
+        }
     }
 
     async print(data, timeout, color) {
@@ -406,7 +419,7 @@ class ChromeTerminal {
                 if( typeof this.terminal.registeredCmd[cmd]?.ontab !== "undefined" ) {
                     result = await this.terminal.registeredCmd[cmd].ontab(args, userIn, keyCode) ;
                     if(typeof result === "string" && result !== "") {
-                        this.insertCarrot("") ;
+                        this.insertCarrot("", true) ;
                         userIn.splice( 0, userIn.length ) ;
                         userIn.push(...result.split("")) ;
                         this.setCharPos(this.terminal.in.x, this.terminal.in.y) ;

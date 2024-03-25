@@ -965,7 +965,8 @@ async function tokenizeCommandLineInput(terminal, args, options = {}, possibleFl
 
     let tokenOptions = {
         ...options,
-        lookForAction: options.lookForAction !== false
+        lookForAction: options.lookForAction !== false,
+        evalTokens: options.evalTokens !== false
     }
 
     // Command parts object
@@ -978,8 +979,10 @@ async function tokenizeCommandLineInput(terminal, args, options = {}, possibleFl
     }
 
     try {
-        let tokens = await tokenizeString( terminal, args.join(" ")) ;
-        args = await evalTokens( terminal, tokens.args, tokens.tokens) ;
+        if(tokenOptions.evalTokens) {
+            let tokens = await tokenizeString(terminal, args.join(" "));
+            args = await evalTokens(terminal, tokens.args, tokens.tokens);
+        }
     } catch(e) {
         return await cmdErr( terminal,  `Runtime error; ${e}.`, 1 ) ;
     }

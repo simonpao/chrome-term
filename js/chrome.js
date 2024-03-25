@@ -151,7 +151,7 @@ class ChromeCommands {
 
     async cdTab(args) {
         return await this.#insertCompletion(args, "dir", {
-            lookForAction: false
+            lookForAction: false, evalTokens: false
         }) ;
     }
 
@@ -215,7 +215,9 @@ class ChromeCommands {
     }
 
     async lsTab(args) {
-        return await this.#insertCompletion(args, "dir") ;
+        return await this.#insertCompletion(args, "dir", {
+            lookForAction: false, evalTokens: false
+        }) ;
     }
 
     async su(args) {
@@ -296,19 +298,25 @@ class ChromeCommands {
     }
 
     async rmdirTab(args) {
-        return await this.#insertCompletion(args, "dir") ;
+        return await this.#insertCompletion(args, "dir", {
+            lookForAction: false, evalTokens: false
+        }) ;
     }
 
     async cp(args) {}
 
     async cpTab(args) {
-        return await this.#insertCompletion(args, "dir") ;
+        return await this.#insertCompletion(args, "dir", {
+            lookForAction: false, evalTokens: false
+        }) ;
     }
 
     async mv(args) {}
 
     async mvTab(args) {
-        return await this.#insertCompletion(args, "dir") ;
+        return await this.#insertCompletion(args, "dir", {
+            lookForAction: false, evalTokens: false
+        }) ;
     }
 
     async rm(args) {
@@ -342,7 +350,9 @@ class ChromeCommands {
     }
 
     async rmTab(args) {
-        return await this.#insertCompletion(args, "dir") ;
+        return await this.#insertCompletion(args, "dir", {
+            lookForAction: false, evalTokens: false
+        }) ;
     }
 
     async tab(args) {
@@ -504,7 +514,9 @@ class ChromeCommands {
     }
 
     async tabTab(args) {
-        let { name, action, flags, start } = await this.#tokenizeCommandLineInput(args) ;
+        let { name, action, flags, start } = await this.#tokenizeCommandLineInput(args, {
+            evalTokens: false
+        }) ;
 
         if(ChromeCommands.flags.open.includes(action)) {
             if(flags.I)
@@ -658,7 +670,9 @@ class ChromeCommands {
     }
 
     async bookmarkTab(args) {
-        let { action, flags, start } = await this.#tokenizeCommandLineInput(args) ;
+        let { action, flags, start } = await this.#tokenizeCommandLineInput(args, {
+            evalTokens: false
+        }) ;
 
         if(ChromeCommands.flags.open.includes(action) ||
            ChromeCommands.flags.info.includes(action) ||
@@ -802,7 +816,9 @@ class ChromeCommands {
     }
 
     async reopenTab(args) {
-        let { action } = await this.#tokenizeCommandLineInput(args) ;
+        let { action } = await this.#tokenizeCommandLineInput(args, {
+            evalTokens: false
+        }) ;
 
         if(ChromeCommands.flags.list.includes(action) ||
            ChromeCommands.flags.open.includes(action) || !action) {
