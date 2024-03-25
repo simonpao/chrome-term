@@ -217,13 +217,15 @@ class ChromeTerminal {
     }
 
     insertCarrot(carrot, backup = false) {
-        if(!backup) {
-            let $char = $(`.char-row-${this.terminal.y} .char-box-${this.terminal.x}`);
+        let $char = $(`.char-row-${this.terminal.y} .char-box-${this.terminal.x}`);
+
+        if(backup) {
+            $char.html('');
+            let { x, y } = this.getPreviousCharLoc() ;
+            $char = $(`.char-row-${y} .char-box-${x}`);
             $char.html(`<span class="blink">${carrot}</span>`);
         } else {
-            let { x, y } = this.getPreviousCharLoc() ;
-            let $char = $(`.char-row-${y} .char-box-${x}`);
-            $char.html('');
+            $char.html(`<span class="blink">${carrot}</span>`);
         }
     }
 
@@ -418,14 +420,30 @@ class ChromeTerminal {
                 let cmd = args[0].toUpperCase() ;
                 if( typeof this.terminal.registeredCmd[cmd]?.ontab !== "undefined" ) {
                     result = await this.terminal.registeredCmd[cmd].ontab(args, userIn, keyCode) ;
-                    if(typeof result === "string" && result !== "") {
-                        this.insertCarrot("", true) ;
-                        userIn.splice( 0, userIn.length ) ;
-                        userIn.push(...result.split("")) ;
-                        this.setCharPos(this.terminal.in.x, this.terminal.in.y) ;
-                        await this.print(result) ;
-                        this.insertCarrot(this.terminal.display.carrot);
+                } else if( args.length === 1 || (!isNaN(args[0]) && args.length === 2)) {
+                    let commands = this.#filterCommands(args[args.length-1]) ;
+                    if(commands.length === 1) {
+                        result = args.length === 2 ? args[0] + " " + commands[0] : commands[0] ;
                     }
+                    if(commands.length > 1) {
+                        this.insertCarrot("") ;
+                        if(commands.length > 100) {
+                            await this.println(`\n${commands.length} matches.`) ;
+                            await this.printPrompt(this.terminal.display.prompt);
+                            this.insertCarrot(this.terminal.display.carrot);
+                        } else {
+                            await printList(this, commands, "") ;
+                        }
+                        result = args.join(" ") ;
+                    }
+                }
+
+                if(typeof result === "string" && result !== "") {
+                    userIn.splice( 0, userIn.length ) ;
+                    userIn.push(...result.split("")) ;
+                    this.setCharPos(this.terminal.in.x, this.terminal.in.y) ;
+                    await this.print(result) ;
+                    this.insertCarrot(this.terminal.display.carrot);
                 }
 
                 break ;
@@ -451,6 +469,13 @@ class ChromeTerminal {
 
                 break ;
         }
+    }
+
+    #filterCommands(partialCmd) {
+        let commands = Object.keys( this.terminal.registeredCmd ) ;
+        return commands.filter(item =>
+            item?.toLowerCase()?.startsWith(partialCmd?.toLowerCase())
+        ) ;
     }
 
     /**

@@ -1150,24 +1150,23 @@ async function printList(term, collection, attribute = "title", printPrompt = tr
             max = val.length ;
     }
 
-    if(max < columns/4) {
+    let printNumberOfColumns = async cols => {
         for(let t of titles) {
-            out += t.text + spaces((columns / 4) - t.len) ;
-            await term.print(t.text + spaces((columns / 4) - t.len), term.terminal.defaultTimeout, getColor(t.type));
+            out += t.text + spaces((columns / cols) - t.len) ;
+            await term.print(t.text + spaces((columns / cols) - t.len), term.terminal.defaultTimeout, getColor(t.type));
         }
-    }
-    else if(max < columns/3) {
-        for(let t of titles) {
-            out += t.text + spaces((columns / 3) - t.len) ;
-            await term.print(t.text + spaces((columns / 3) - t.len), term.terminal.defaultTimeout, getColor(t.type));
-        }
-    }
-    else if(max < columns/2) {
-        for(let t of titles) {
-            out += t.text + spaces((columns / 2) - t.len) ;
-            await term.print(t.text + spaces((columns / 2) - t.len), term.terminal.defaultTimeout, getColor(t.type));
-        }
-    }
+    } ;
+
+    if(max < columns/6)
+        await printNumberOfColumns(6) ;
+    else if(max < columns/5)
+        await printNumberOfColumns(5) ;
+    else if(max < columns/4)
+        await printNumberOfColumns(4) ;
+    else if(max < columns/3)
+        await printNumberOfColumns(3) ;
+    else if(max < columns/2)
+        await printNumberOfColumns(2) ;
     else {
         for(let t of titles) {
             out += t.text + "\n"

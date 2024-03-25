@@ -896,6 +896,7 @@ class ChromeCommands {
             return begin + " " + path ;
         }
         if(item.length > 1) {
+            this.terminal.insertCarrot("") ;
             if(item.length > 100) {
                 await this.terminal.println(`\n${item.length} matches.`) ;
                 await this.terminal.printPrompt(this.terminal.terminal.display.prompt);
