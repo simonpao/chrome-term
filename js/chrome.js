@@ -307,7 +307,8 @@ class ChromeCommands {
 
     async cpTab(args) {
         return await this.#insertCompletion(args, "dir", {
-            lookForAction: false, evalTokens: false
+            lookForAction: false, evalTokens: false,
+            multipleDirs: true
         }) ;
     }
 
@@ -315,7 +316,8 @@ class ChromeCommands {
 
     async mvTab(args) {
         return await this.#insertCompletion(args, "dir", {
-            lookForAction: false, evalTokens: false
+            lookForAction: false, evalTokens: false,
+            multipleDirs: true
         }) ;
     }
 
@@ -857,35 +859,29 @@ class ChromeCommands {
         let path = item[0]?.title || "" ;
 
         if(item.length === 0 && type === "dir") {
-            let nameParts = name.split("/") ;
-            let id = this.path.id ;
-            let parentId = this.path.parentId ;
-            let save = "" ;
-            for(let i in nameParts) if(nameParts.hasOwnProperty(i)) {
-                let part = nameParts[i] ;
-
-                if(parseInt(i)+1 === nameParts.length)
-                    item = this.#getItemByPartialName((save !== "" ? save : part), id ) ;
-                else {
-                    if(this.#isSpecialPathPart(part)) {
-                        item = this.#parseSpecialPathParts(part, id, parentId) ;
-                        id = item?.id ;
-                        parentId = item?.parentId ;
-                        path += part + "/" ;
-                        continue ;
+            if(options.multipleDirs) {
+                let dirPaths = name.split(" ") ;
+                if(dirPaths.length > 1) {
+                    for(let i = dirPaths.length-1 ; i >= 0 ; i--) {
+                        let tmpName = dirPaths.slice(i, dirPaths.length).join(" ") ;
+                        let result = this.#findDirectory(item, tmpName, path) ;
+                        if(result.item.length) {
+                            item = result.item ;
+                            path = result.path ;
+                            name = tmpName ;
+                            begin += (i === 0 ? "" : " ") + dirPaths.slice(0, i).join(" ") ;
+                            break ;
+                        }
                     }
-                    else
-                        item = this.#getItemByName((save !== "" ? save + part : part), id ) ;
+                } else {
+                    let result = this.#findDirectory(item, name, path) ;
+                    item = result.item ;
+                    path = result.path ;
                 }
-
-                if(!item || !item.length)
-                    save += part + "/" ;
-                else {
-                    save = "" ;
-                    id = item[0]?.id ;
-                    parentId = item[0]?.parentId ;
-                    path += item[0]?.title + "/" ;
-                }
+            } else {
+                let result = this.#findDirectory(item, name, path) ;
+                item = result.item ;
+                path = result.path ;
             }
         }
         if(item.length === 1) {
@@ -907,6 +903,41 @@ class ChromeCommands {
             return begin + " " + name ;
         }
         return "" ;
+    }
+
+    #findDirectory(item, name, path) {
+        let nameParts = name.split("/") ;
+        let id = this.path.id ;
+        let parentId = this.path.parentId ;
+        let save = "" ;
+        for(let i in nameParts) if(nameParts.hasOwnProperty(i)) {
+            let part = nameParts[i] ;
+
+            if(parseInt(i)+1 === nameParts.length)
+                item = this.#getItemByPartialName((save !== "" ? save : part), id ) ;
+            else {
+                if(this.#isSpecialPathPart(part)) {
+                    item = this.#parseSpecialPathParts(part, id, parentId) ;
+                    id = item?.id ;
+                    parentId = item?.parentId ;
+                    path += part + "/" ;
+                    continue ;
+                }
+                else
+                    item = this.#getItemByName((save !== "" ? save + part : part), id ) ;
+            }
+
+            if(!item || !item.length)
+                save += part + "/" ;
+            else {
+                save = "" ;
+                id = item[0]?.id ;
+                parentId = item[0]?.parentId ;
+                path += item[0]?.title + "/" ;
+            }
+        }
+
+        return { item, path } ;
     }
 
     async #insertIdCompletion(args) {

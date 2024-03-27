@@ -167,6 +167,7 @@ class ChromeTerminal {
         $(".char-box").text("") ;
         this.refresh() ;
         this.terminal.y-- ;
+        this.terminal.in.y-- ;
     }
 
     returnStatus() {
