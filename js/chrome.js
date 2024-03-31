@@ -303,7 +303,20 @@ class ChromeCommands {
         }) ;
     }
 
-    async cp(args) {}
+    async cp(args) {
+        let { flags, name } = await this.#tokenizeCommandLineInput(args, {
+            lookForAction: false
+        }) ;
+
+        try {
+            let { to, toName, from, fromName } = this.#findFromAndToDirs(name) ;
+            console.log({ to, toName, from, fromName }) ;
+            await this.terminal.println(JSON.stringify({ to, toName, from, fromName })) ;
+            return "" ;
+        } catch(e) {
+            return await cmdErr( this.terminal, e, 1 ) ;
+        }
+    }
 
     async cpTab(args) {
         return await this.#insertCompletion(args, "dir", {
@@ -312,7 +325,9 @@ class ChromeCommands {
         }) ;
     }
 
-    async mv(args) {}
+    async mv(args) {
+
+    }
 
     async mvTab(args) {
         return await this.#insertCompletion(args, "dir", {
@@ -864,7 +879,7 @@ class ChromeCommands {
                 if(dirPaths.length > 1) {
                     for(let i = dirPaths.length-1 ; i >= 0 ; i--) {
                         let tmpName = dirPaths.slice(i, dirPaths.length).join(" ") ;
-                        let result = this.#findDirectory(item, tmpName, path) ;
+                        let result = this.#findDirectory(tmpName) ;
                         if(result.item.length) {
                             item = result.item ;
                             path = result.path ;
@@ -874,12 +889,12 @@ class ChromeCommands {
                         }
                     }
                 } else {
-                    let result = this.#findDirectory(item, name, path) ;
+                    let result = this.#findDirectory(name) ;
                     item = result.item ;
                     path = result.path ;
                 }
             } else {
-                let result = this.#findDirectory(item, name, path) ;
+                let result = this.#findDirectory(name) ;
                 item = result.item ;
                 path = result.path ;
             }
@@ -903,41 +918,6 @@ class ChromeCommands {
             return begin + " " + name ;
         }
         return "" ;
-    }
-
-    #findDirectory(item, name, path) {
-        let nameParts = name.split("/") ;
-        let id = this.path.id ;
-        let parentId = this.path.parentId ;
-        let save = "" ;
-        for(let i in nameParts) if(nameParts.hasOwnProperty(i)) {
-            let part = nameParts[i] ;
-
-            if(parseInt(i)+1 === nameParts.length)
-                item = this.#getItemByPartialName((save !== "" ? save : part), id ) ;
-            else {
-                if(this.#isSpecialPathPart(part)) {
-                    item = this.#parseSpecialPathParts(part, id, parentId) ;
-                    id = item?.id ;
-                    parentId = item?.parentId ;
-                    path += part + "/" ;
-                    continue ;
-                }
-                else
-                    item = this.#getItemByName((save !== "" ? save + part : part), id ) ;
-            }
-
-            if(!item || !item.length)
-                save += part + "/" ;
-            else {
-                save = "" ;
-                id = item[0]?.id ;
-                parentId = item[0]?.parentId ;
-                path += item[0]?.title + "/" ;
-            }
-        }
-
-        return { item, path } ;
     }
 
     async #insertIdCompletion(args) {
@@ -1165,6 +1145,91 @@ class ChromeCommands {
             }
         }
         return item ;
+    }
+
+    #findDirectory(name, searchPartials = true) {
+        let item = [] ;
+        let path = "" ;
+        let nameParts = name.split("/") ;
+        let id = this.path.id ;
+        let parentId = this.path.parentId ;
+        let save = "" ;
+        for(let i in nameParts) if(nameParts.hasOwnProperty(i)) {
+            let part = nameParts[i] ;
+
+            if(parseInt(i)+1 === nameParts.length) {
+                if (searchPartials)
+                    item = this.#getItemByPartialName((save !== "" ? save : part), id);
+                else {
+                    let tmpItem = this.#getItemByName((save !== "" ? save + part : part), id ) ;
+                    if(tmpItem.length) item = tmpItem ;
+                }
+            } else {
+                if(this.#isSpecialPathPart(part)) {
+                    item = this.#parseSpecialPathParts(part, id, parentId) ;
+                    id = item?.id ;
+                    parentId = item?.parentId ;
+                    path += part + "/" ;
+                    continue ;
+                }
+                else
+                    item = this.#getItemByName((save !== "" ? save + part : part), id ) ;
+            }
+
+            if(!item || !item.length)
+                save += part + "/" ;
+            else {
+                save = "" ;
+                id = item[0]?.id ;
+                parentId = item[0]?.parentId ;
+                path += item[0]?.title + "/" ;
+            }
+        }
+
+        return { item, path } ;
+    }
+
+    #findFromAndToDirs(name) {
+        let items = {
+            to: null,
+            toName: "",
+            from: null,
+            fromName: ""
+        } ;
+
+        let dirPaths = name.split(" ") ;
+        if(dirPaths.length > 1) {
+            let start = 0 ;
+            for(let i = 0 ; i < dirPaths.length ; i++) {
+                let tmpName = dirPaths.slice(start, i+1).join(" ") ;
+                let result = this.#findDirectory(tmpName, false) ;
+                if(result.item.length) {
+                    let parts = tmpName.split("/");
+                    if(!items.from) {
+                        items.from = result.item;
+                        items.fromName = parts[parts.length-1] === "" ? parts[parts.length-2] : parts[parts.length-1] ;
+                    } else if(!items.to) {
+                        items.to = result.item;
+                        items.toName = parts[parts.length-1] === "" ? parts[parts.length-2] : parts[parts.length-1] ;
+                    } else
+                        throw "Syntax error; command only accepts a source and destination." ;
+                    start = i+1 ;
+                }
+            }
+        } else {
+            throw "Syntax error; command requires a source and destination." ;
+        }
+
+        if(!items.from)
+            throw "Syntax error; command requires source to be an existing directory."
+
+        if(!items.to) {
+            let parts = name.split(" ");
+            parts = parts[parts.length-1].split("/") ;
+            items.toName = parts[parts.length-1] ;
+        }
+
+        return items ;
     }
 
     // Tab operations
