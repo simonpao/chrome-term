@@ -629,7 +629,11 @@ class ChromeCommands {
         if(ChromeCommands.flags.new.includes(action)) {
             if(!name)
                 return await cmdErr( this.terminal, `No tabgroup name specified.`, 1 ) ;
-            return await this.#addUngroupedTabsToGroup(name) ;
+            try {
+                return await this.#addUngroupedTabsToGroup(name);
+            } catch(e) {
+                return await cmdErr( this.terminal, e, 1 ) ;
+            }
         }
 
         if(ChromeCommands.flags.list.includes(action)) {
@@ -1503,20 +1507,24 @@ class ChromeCommands {
         return new Promise(async (resolve, reject) => {
             if(!group)
                 reject("Group name is required.");
-            let [tabs, tabGroup] = await Promise.all([
-                this.#getUngroupedTabs(),
-                chrome.tabGroups.query( { title: group } )
-            ]) ;
-            let groupId = -1 ;
+            try {
+                let [tabs, tabGroup] = await Promise.all([
+                    this.#getUngroupedTabs(),
+                    chrome.tabGroups.query({title: group})
+                ]);
+                let groupId = -1;
 
-            if(!tabGroup.length) {
-                groupId = await chrome.tabs.group({ tabIds: tabs.map(item => item.id) });
-                await chrome.tabGroups.update(groupId, { title: group });
-            } else {
-                groupId = await chrome.tabs.group({ groupId: tabGroup[0].id, tabIds: tabs.map(item => item.id) });
+                if(!tabGroup.length) {
+                    groupId = await chrome.tabs.group({ tabIds: tabs.map(item => item.id) });
+                    await chrome.tabGroups.update(groupId, { title: group });
+                } else {
+                    groupId = await chrome.tabs.group({ groupId: tabGroup[0].id, tabIds: tabs.map(item => item.id) });
+                }
+
+                resolve(groupId) ;
+            } catch(e) {
+                reject(e) ;
             }
-
-            resolve(groupId) ;
         }) ;
     }
 

@@ -4,7 +4,7 @@
     - If last element of path is an existing bookmark, display error unless `-f` option passed
         - `-f` option overwrites existing bookmark
     - If last element of path does not exist, move bookmark into directory with new name being last element
- - Implement `cp` command
+ - Implement `cp` command **(done)**
     - If last element of path is an existing directory, copy bookmark into directory with current name unless a bookmark with the same name already exists there
         - `-f` option overwrites existing bookmark
     - If last element of path is an existing bookmark, display error unless `-f` option passed
