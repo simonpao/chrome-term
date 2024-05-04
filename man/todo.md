@@ -14,6 +14,7 @@
     - Category should be set during `registerCmd()`
  - Implement `tabgroup` command
     - `new` tabgroup containing all ungrouped tabs **(done)**
+    - `list` active tabgroups
     - `move` tab to existing or new tab group
     - `expand` or `collapse` a tab group
     - `close` a tab group

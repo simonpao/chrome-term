@@ -582,6 +582,39 @@ class ChromeCommands {
             return await this.#addUngroupedTabsToGroup(name) ;
         }
 
+        if(ChromeCommands.flags.list.includes(action)) {
+            let allTabGroups = [] ;
+
+            try {
+                if(!name) {
+                    allTabGroups = await this.#getAllTabGroups() ;
+                } else {
+                    allTabGroups = await this.#getAllTabGroups(
+                        item =>
+                            item.title?.toLowerCase()?.startsWith(name.toLowerCase())
+                    ) ;
+                }
+            } catch (e) {
+                return await cmdErr( this.terminal, e, 1 ) ;
+            }
+
+            result += padWithSpaces("ID", 15);
+            result += padWithSpaces("STATE", 10);
+            result += padWithSpaces("COLOR", 10);
+            result += padWithSpaces("TITLE", this.terminal.terminal.columns-36) + "\n" ;
+
+            for(let t in allTabGroups) {
+                result += padWithSpaces(allTabGroups[t].id.toString() + ": ", 15);
+                result += padWithSpaces(allTabGroups[t].collapsed ? "collapsed" : "expanded", 10);
+                result += padWithSpaces(allTabGroups[t].color.toString(), 10);
+                result += padWithSpaces(allTabGroups[t].title, this.terminal.terminal.columns-36) + "\n" ;
+            }
+
+            this.terminal.terminal.status = 0 ;
+            await this.terminal.print( result ) ;
+            return result ;
+        }
+
         this.terminal.terminal.status = 1 ;
         await this.terminal.println( `Failed to process tabgroup command.` ) ;
         return result ;
@@ -1367,6 +1400,21 @@ class ChromeCommands {
                 }, res => {
                     resolve(res) ;
                 })
+        }) ;
+    }
+
+    async #getAllTabGroups(filter) {
+        return new Promise((resolve, reject) => {
+            chrome.tabGroups.query({}, tabs => {
+                if (tabs.length) {
+                    if(typeof filter === "function")
+                        resolve(tabs.filter(filter)) ;
+                    else
+                        resolve(tabs) ;
+                } else {
+                    reject("Unable to get tab groups") ;
+                }
+            });
         }) ;
     }
 

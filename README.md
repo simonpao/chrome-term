@@ -21,8 +21,8 @@ Examples include:
    - select a tab
      - `tab activate Google`
      - `tab activate -i 1652151025`
- - `tabgroup` (not implemented yet)
-   - open / close tab group
+ - `tabgroup`
+   - add ungrouped tabs to new or existing group
    - view open tab groups
  - `bookmark`
    - save a new bookmark
