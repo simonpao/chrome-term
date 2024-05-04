@@ -310,9 +310,32 @@ class ChromeCommands {
 
         try {
             let { to, toName, from, fromName } = this.#findFromAndToDirs(name) ;
-            console.log({ to, toName, from, fromName }) ;
-            await this.terminal.println(JSON.stringify({ to, toName, from, fromName })) ;
-            return "" ;
+
+            if(!from)
+                return await cmdErr( this.terminal, "Must specify a source bookmark", 1 ) ;
+
+            let destinationId ;
+            if(!to) {
+                to = from;
+                destinationId = from[0].parentId ;
+            }
+            else destinationId = to[0].id ;
+
+            let newBookmarkName = toName === to[0].title ? fromName : toName ;
+
+            if(!flags.F) {
+                let check = this.#getItemByName(newBookmarkName, destinationId);
+                if(check.length)
+                    return await cmdErr( this.terminal, "A bookmark with this name already exists in this directory.", 1 ) ;
+            }
+
+            await this.#createBookmark(
+                newBookmarkName,
+                from[0].url,
+                destinationId
+            ) ;
+
+            return toName ;
         } catch(e) {
             return await cmdErr( this.terminal, e, 1 ) ;
         }
@@ -346,7 +369,7 @@ class ChromeCommands {
             let newBookmarkName = toName === to[0].title ? fromName : toName ;
 
             if(!flags.F) {
-                let check = this.#getItemByName(newBookmarkName, to[0].id);
+                let check = this.#getItemByName(newBookmarkName, destinationId);
                 if(check.length)
                     return await cmdErr( this.terminal, "A bookmark with this name already exists in this directory.", 1 ) ;
             }
@@ -705,18 +728,7 @@ class ChromeCommands {
                 if(check.length)
                     return await cmdErr( this.terminal, "A bookmark with this name already exists in this directory.", 1 ) ;
 
-                let bookmark = await this.#createBookmark(tab.title, tab.url, this.path.id) ;
-
-                this.bookmarks.push({
-                    title: bookmark.title,
-                    id: bookmark.id,
-                    parentId: bookmark.parentId,
-                    index: bookmark.index,
-                    dateAdded: bookmark.dateAdded,
-                    dateGroupModified: bookmark.dateGroupModified,
-                    url: bookmark.url,
-                    type: "bookmark"
-                }) ;
+                await this.#createBookmark(tab.title, tab.url, this.path.id) ;
 
                 this.terminal.terminal.status = 0 ;
                 await this.terminal.println( `Bookmark saved as ${tab.title}.` ) ;
@@ -1131,6 +1143,17 @@ class ChromeCommands {
                 if(!newBookmark)
                     reject("Error creating bookmark") ;
                 resolve(newBookmark) ;
+
+                this.bookmarks.push({
+                    title: newBookmark.title,
+                    id: newBookmark.id,
+                    parentId: newBookmark.parentId,
+                    index: newBookmark.index,
+                    dateAdded: newBookmark.dateAdded,
+                    dateGroupModified: newBookmark.dateGroupModified,
+                    url: newBookmark.url,
+                    type: "bookmark"
+                }) ;
             });
         }) ;
     }
@@ -1313,16 +1336,20 @@ class ChromeCommands {
         } ;
 
         let dirPaths = name.split(" ") ;
+        let tmpName ;
         if(dirPaths.length > 1) {
             let start = 0 ;
             for(let i = 0 ; i < dirPaths.length ; i++) {
-                let tmpName = dirPaths.slice(start, i+1).join(" ") ;
+                tmpName = dirPaths.slice(start, i+1).join(" ") ;
                 let result = this.#findDirectory(tmpName, false) ;
                 if(result.item.length) {
                     let parts = tmpName.split("/");
                     if(!items.from) {
                         items.from = result.item;
                         items.fromName = parts[parts.length-1] === "" ? parts[parts.length-2] : parts[parts.length-1] ;
+                        start = i + 1;
+                        i = dirPaths.length - 2;
+                        continue ;
                     } else if(!items.to) {
                         items.to = result.item;
                         items.toName = parts[parts.length-1] === "" ? parts[parts.length-2] : parts[parts.length-1] ;
@@ -1339,8 +1366,7 @@ class ChromeCommands {
             throw "Syntax error; command requires source to be an existing bookmark."
 
         if(!items.to) {
-            let parts = name.split(" ");
-            parts = parts[parts.length-1].split("/") ;
+            let parts = tmpName?.split("/") ;
             items.toName = parts[parts.length-1] ;
         }
 

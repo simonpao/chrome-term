@@ -65,6 +65,6 @@ Directory structure will be based on bookmark directories.
  - `ls` to view folder contents
  - `mkdir` to create new folders
  - `rmdir` to delete a folder
- - `cp` to copy (not implemented yet)
- - `mv` to move (not implemented yet)
+ - `cp` to copy
+ - `mv` to move
  - `rm` to remove

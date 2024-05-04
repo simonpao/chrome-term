@@ -1,5 +1,5 @@
 # chrome-term todo:
- - Implement `mv` command
+ - Implement `mv` command **(done)**
     - If last element of path is an existing directory, move bookmark into directory with current name
     - If last element of path is an existing bookmark, display error unless `-f` option passed
         - `-f` option overwrites existing bookmark
@@ -14,7 +14,7 @@
     - Category should be set during `registerCmd()`
  - Implement `tabgroup` command
     - `new` tabgroup containing all ungrouped tabs **(done)**
-    - `list` active tabgroups
+    - `list` active tabgroups **(done)**
     - `move` tab to existing or new tab group
     - `expand` or `collapse` a tab group
     - `close` a tab group
