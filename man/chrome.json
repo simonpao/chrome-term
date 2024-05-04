@@ -6,8 +6,9 @@
   "RMDIR": "Delete a specified folder",
   "CP": "Copy a bookmark",
   "MV": "Move a bookmark",
-  "TAB": "Manage Chrome tabs\nAvailable actions are:\n - OPEN\n - CLOSE\n - NEW\n - LIST\n - INFO\n - ACTIVATE\nFor example:\n - tab open Bookmark name\n - tab list\n - tab info",
+  "TAB": "Manage Chrome tabs\nAvailable actions are:\n - OPEN\n - CLOSE\n - NEW\n - LIST\n - INFO\n - ACTIVATE\nFor example:\n - tab open Bookmark name\n - tab list\n - tab info\nUse -T flag to specify a tabgroup name",
   "TABGROUP": "Manage tab groups",
   "BOOKMARK": "Manage bookmarks\nAvailable actions are:\n - OPEN\n - NEW\n - INFO\n - EDIT",
-  "HISTORY": "Manage browsing history"
+  "HISTORY": "Manage browsing history",
+  "GOOGLE": "Perform a google search"
 }

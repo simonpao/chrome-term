@@ -8,7 +8,7 @@ class ChromeCommands {
         edit:  ["--EDIT",  "EDIT",  "E"],
         save:  ["--SAVE",  "SAVE",  "S"],
         activate: ["--ACTIVATE", "ACTIVATE", "A"],
-        modifiers: ["A", "D", "I", "L", "Q", "R", "S"]
+        modifiers: ["A", "D", "I", "L", "Q", "R", "S", "T"]
     }
 
     path = { text:"/", id: "0", parentId: null } ;
@@ -326,7 +326,18 @@ class ChromeCommands {
     }
 
     async mv(args) {
+        let { flags, name } = await this.#tokenizeCommandLineInput(args, {
+            lookForAction: false
+        }) ;
 
+        try {
+            let { to, toName, from, fromName } = this.#findFromAndToDirs(name) ;
+            console.log({ to, toName, from, fromName }) ;
+            await this.terminal.println(JSON.stringify({ to, toName, from, fromName })) ;
+            return "" ;
+        } catch(e) {
+            return await cmdErr( this.terminal, e, 1 ) ;
+        }
     }
 
     async mvTab(args) {
@@ -373,7 +384,9 @@ class ChromeCommands {
     }
 
     async tab(args) {
-        let { action, flags, name } = await this.#tokenizeCommandLineInput(args) ;
+        let { action, flags, name } = await this.#tokenizeCommandLineInput(args, {
+            T: { lookForArgument: true }
+        }) ;
         let result = "" ;
 
         if(ChromeCommands.flags.open.includes(action)) {
@@ -390,7 +403,7 @@ class ChromeCommands {
             if(bookmark.type !== "bookmark")
                 return await cmdErr( this.terminal, `${name} is not a bookmark.`, 1 ) ;
             result = bookmark.url ;
-            await this.#openNewTab(bookmark.url) ;
+            await this.#openNewTab(bookmark.url, flags.T) ;
             this.terminal.terminal.status = 0 ;
             await this.terminal.println( `Bookmark opened in new tab.` ) ;
             return result ;
@@ -425,7 +438,7 @@ class ChromeCommands {
 
         if(ChromeCommands.flags.new.includes(action)) {
             if(!name) {
-                let tab = await this.#openNewTab(null) ;
+                let tab = await this.#openNewTab(null, flags.T) ;
                 await this.terminal.println( `New tab opened with ID ${tab.id}.` ) ;
                 return tab.id ;
             }
@@ -434,7 +447,7 @@ class ChromeCommands {
                     name = "https://" + name ;
                 try {
                     let url = new URL(name) ;
-                    let tab = await this.#openNewTab(url.toString()) ;
+                    let tab = await this.#openNewTab(url.toString(), flags.T) ;
                     await this.terminal.println( `${url.toString()} opened with ID ${tab.id}.` ) ;
                     return tab.id ;
                 } catch(e) {
@@ -532,6 +545,7 @@ class ChromeCommands {
 
     async tabTab(args) {
         let { name, action, flags, start } = await this.#tokenizeCommandLineInput(args, {
+            T: { lookForArgument: true },
             evalTokens: false
         }) ;
 
@@ -539,7 +553,10 @@ class ChromeCommands {
             if(flags.I)
                 return await this.#insertIdCompletion(args) ;
             else
-                return await this.#insertCompletion(args, "dir") ;
+                return await this.#insertCompletion(args, "dir", {
+                    T: { lookForArgument: true },
+                    evalTokens: false
+                }) ;
         }
 
         if(ChromeCommands.flags.close.includes(action) ||
@@ -555,14 +572,18 @@ class ChromeCommands {
         return "" ;
     }
 
-    async tabgroup(args) {}
+    async tabgroup(args) {
+
+    }
 
     async tabgroupTab(args) {
         return "" ;
     }
 
     async bookmark(args) {
-        let { action, flags, name } = await this.#tokenizeCommandLineInput(args) ;
+        let { action, flags, name } = await this.#tokenizeCommandLineInput(args, {
+            T: { lookForArgument: true }
+        }) ;
         let result = "" ;
 
         if(ChromeCommands.flags.open.includes(action)) {
@@ -579,7 +600,7 @@ class ChromeCommands {
             if(bookmark.type !== "bookmark")
                 return await cmdErr( this.terminal, `${name} is not a bookmark.`, 1 ) ;
             result = bookmark.url ;
-            await this.#openNewTab(bookmark.url) ;
+            await this.#openNewTab(bookmark.url, flags.T) ;
             this.terminal.terminal.status = 0 ;
             await this.terminal.println( `Bookmark opened in new tab.` ) ;
             return result ;
@@ -688,6 +709,7 @@ class ChromeCommands {
 
     async bookmarkTab(args) {
         let { action, flags, start } = await this.#tokenizeCommandLineInput(args, {
+            T: { lookForArgument: true },
             evalTokens: false
         }) ;
 
@@ -697,7 +719,10 @@ class ChromeCommands {
             if(flags.I)
                 return await this.#insertIdCompletion(args) ;
             else
-                return await this.#insertCompletion(args, "dir") ;
+                return await this.#insertCompletion(args, "dir", {
+                    T: { lookForArgument: true },
+                    evalTokens: false
+                }) ;
         }
 
         if(ChromeCommands.flags.new.includes(action)) {
@@ -846,11 +871,13 @@ class ChromeCommands {
     }
 
     async google(args) {
-        let { action, name } = await this.#tokenizeCommandLineInput(args) ;
+        let { action, flags, name } = await this.#tokenizeCommandLineInput(args, {
+            T: { lookForArgument: true }
+        }) ;
 
         if(ChromeCommands.flags.open.includes(action) || !action) {
             let url = `https://www.google.com/search?q=${encodeURIComponent(name)}` ;
-            await this.#openNewTab(url) ;
+            await this.#openNewTab(url, flags.T) ;
             this.terminal.terminal.status = 0 ;
             await this.terminal.println( `Google search opened in new tab.` ) ;
             return url ;
@@ -970,7 +997,10 @@ class ChromeCommands {
     }
 
     async #insertUrlCompletion(args) {
-        let { action, flags, name, start } = await this.#tokenizeCommandLineInput(args) ;
+        let { action, flags, name, start } = await this.#tokenizeCommandLineInput(args, {
+            T: { lookForArgument: true },
+            evalTokens: false
+        }) ;
         let begin = args.slice(0, start).join(" ") ;
 
         if(name === "")

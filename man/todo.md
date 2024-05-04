@@ -1,6 +1,4 @@
 # chrome-term todo:
- - On `ls -al`, make `id` and `parent` of `".."` the parent dir's and `id` and `parent` of `"."` the current dir's **(done)**
- - Filter `tab ls` and `ls` by partial name **(done)**
  - Implement `mv` command
     - If last element of path is an existing directory, move bookmark into directory with current name
     - If last element of path is an existing bookmark, display error unless `-f` option passed
@@ -12,29 +10,14 @@
     - If last element of path is an existing bookmark, display error unless `-f` option passed
     - If last element of path does not exist, copy bookmark into directory with new name being last element
  - implement a `COPY` command that will copy screen contents to clipboard
- - Try five column table layout
  - Separate `HELP` into sections for directory operations, math operations, stored program operations, etc.
     - Category should be set during `registerCmd()`
- - Fix tab completion when wrapping to new line and screen content is scrolling up
  - Implement `tabgroup` command
+    - `new` tabgroup containing all ungrouped tabs
     - `move` tab to existing or new tab group
     - `expand` or `collapse` a tab group
     - `close` a tab group
     - `open` entire directory as a tab group, either named as directory or with custom name
     - `rename` a tab group 
- - Implement `history` command **(done)**
-    - `list` recent history **(done)**
-        - or specify options to list history from certain date or time **(done)**
- - Implement `reopen` command (`-s` to open silently) **(done)**
-    - List recently closed tabs/windows **(done)**
-       - `reopen ls` **(done)**
-       - `reopen ls google` **(done)**
-       - `reopen ls -i 123456` **(done)**
-    - Reopen recent tabs/windows **(done)**
-       - `reopen` **(done)**
-       - `reopen Google` **(done)**
-       - `reopen -i 123456` **(done)**
- - Implement `bookmark edit` using similar logic as `simonedit`
- - Press `Up Arrow` to recall recent commands **(done)**
  - Implement `google` command
    - `google search term` **(done)**
