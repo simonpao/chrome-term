@@ -8,7 +8,7 @@ class ChromeCommands {
         edit:  ["--EDIT",  "EDIT",  "E"],
         save:  ["--SAVE",  "SAVE",  "S"],
         activate: ["--ACTIVATE", "ACTIVATE", "A"],
-        modifiers: ["A", "D", "I", "L", "Q", "R", "S", "T"]
+        modifiers: ["A", "D", "F", "I", "L", "Q", "R", "S", "T"]
     }
 
     path = { text:"/", id: "0", parentId: null } ;
@@ -332,9 +332,36 @@ class ChromeCommands {
 
         try {
             let { to, toName, from, fromName } = this.#findFromAndToDirs(name) ;
-            console.log({ to, toName, from, fromName }) ;
-            await this.terminal.println(JSON.stringify({ to, toName, from, fromName })) ;
-            return "" ;
+
+            if(!from)
+                return await cmdErr( this.terminal, "Must specify a source bookmark", 1 ) ;
+
+            let destinationId ;
+            if(!to) {
+                to = from;
+                destinationId = from[0].parentId ;
+            }
+            else destinationId = to[0].id ;
+
+            let newBookmarkName = toName === to[0].title ? fromName : toName ;
+
+            if(!flags.F) {
+                let check = this.#getItemByName(newBookmarkName, to[0].id);
+                if(check.length)
+                    return await cmdErr( this.terminal, "A bookmark with this name already exists in this directory.", 1 ) ;
+            }
+
+            await this.#moveBookmark(from[0].id, {
+                parentId: destinationId
+            }) ;
+
+            if(toName !== to[0].title) {
+                await this.#updateBookmark(from[0].id, {
+                    title: newBookmarkName
+                }) ;
+            }
+
+            return toName ;
         } catch(e) {
             return await cmdErr( this.terminal, e, 1 ) ;
         }
@@ -1101,6 +1128,8 @@ class ChromeCommands {
                 title: title,
                 url: url,
             }, newBookmark => {
+                if(!newBookmark)
+                    reject("Error creating bookmark") ;
                 resolve(newBookmark) ;
             });
         }) ;
@@ -1112,7 +1141,11 @@ class ChromeCommands {
                 reject("Error deleting bookmark") ;
                 return ;
             }
-            chrome.bookmarks.remove(id, res => resolve(res));
+            chrome.bookmarks.remove(id, res => {
+                if(!res)
+                    reject("Error deleting bookmark") ;
+                resolve(res) ;
+            });
             this.bookmarks.splice(
                 this.bookmarks.findIndex( item => item.id === id ), 1
             );
@@ -1125,7 +1158,11 @@ class ChromeCommands {
                 reject("Error updating bookmark") ;
                 return ;
             }
-            chrome.bookmarks.update(id, updates, res => resolve(res));
+            chrome.bookmarks.update(id, updates, res => {
+                if(!res)
+                    reject("Error updating bookmark") ;
+                resolve(res) ;
+            });
             this.bookmarks[this.bookmarks.findIndex( item => item.id === id )].title = updates.title ;
             if(updates.url)
                 this.bookmarks[this.bookmarks.findIndex( item => item.id === id )].url = updates.url ;
@@ -1138,7 +1175,11 @@ class ChromeCommands {
                 reject("Error updating bookmark") ;
                 return ;
             }
-            chrome.bookmarks.move(id, destination, res => resolve(res));
+            chrome.bookmarks.move(id, destination, res => {
+                if(!res)
+                    reject("Error moving bookmark") ;
+                resolve(res) ;
+            });
             this.bookmarks[this.bookmarks.findIndex( item => item.id === id )].parentId = destination.parentId ;
         }) ;
     }
@@ -1295,7 +1336,7 @@ class ChromeCommands {
         }
 
         if(!items.from)
-            throw "Syntax error; command requires source to be an existing directory."
+            throw "Syntax error; command requires source to be an existing bookmark."
 
         if(!items.to) {
             let parts = name.split(" ");
