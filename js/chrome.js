@@ -573,7 +573,18 @@ class ChromeCommands {
     }
 
     async tabgroup(args) {
+        let { action, flags, name } = await this.#tokenizeCommandLineInput(args) ;
+        let result = "" ;
 
+        if(ChromeCommands.flags.new.includes(action)) {
+            if(!name)
+                return await cmdErr( this.terminal, `No tabgroup name specified.`, 1 ) ;
+            return await this.#addUngroupedTabsToGroup(name) ;
+        }
+
+        this.terminal.terminal.status = 1 ;
+        await this.terminal.println( `Failed to process tabgroup command.` ) ;
+        return result ;
     }
 
     async tabgroupTab(args) {
@@ -1356,6 +1367,41 @@ class ChromeCommands {
                 }, res => {
                     resolve(res) ;
                 })
+        }) ;
+    }
+
+    async #getUngroupedTabs() {
+        return new Promise((resolve, reject) => {
+            chrome.tabs.query({
+                groupId: -1
+            }, tabs => {
+                if (tabs.length) {
+                    resolve(tabs) ;
+                } else {
+                    reject("No ungrouped tabs found.");
+                }
+            });
+        }) ;
+    }
+
+    async #addUngroupedTabsToGroup(group) {
+        return new Promise(async (resolve, reject) => {
+            if(!group)
+                reject("Group name is required.");
+            let [tabs, tabGroup] = await Promise.all([
+                this.#getUngroupedTabs(),
+                chrome.tabGroups.query( { title: group } )
+            ]) ;
+            let groupId = -1 ;
+
+            if(!tabGroup.length) {
+                groupId = await chrome.tabs.group({ tabIds: tabs.map(item => item.id) });
+                await chrome.tabGroups.update(groupId, { title: group });
+            } else {
+                groupId = await chrome.tabs.group({ groupId: tabGroup[0].id, tabIds: tabs.map(item => item.id) });
+            }
+
+            resolve(groupId) ;
         }) ;
     }
 

@@ -13,11 +13,12 @@
  - Separate `HELP` into sections for directory operations, math operations, stored program operations, etc.
     - Category should be set during `registerCmd()`
  - Implement `tabgroup` command
-    - `new` tabgroup containing all ungrouped tabs
+    - `new` tabgroup containing all ungrouped tabs **(done)**
     - `move` tab to existing or new tab group
     - `expand` or `collapse` a tab group
     - `close` a tab group
     - `open` entire directory as a tab group, either named as directory or with custom name
     - `rename` a tab group 
+    - `ungroup` a tab group
  - Implement `google` command
    - `google search term` **(done)**
