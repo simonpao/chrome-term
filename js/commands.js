@@ -7,7 +7,7 @@ const availableFlags = {
     list:   ["--LIST",   "LIST",   "L"],
     recall: ["--RECALL", "RECALL", "R"],
     delete: ["--DELETE", "DELETE", "D"],
-    modifiers: ["D", "L", "R"]
+    modifiers: ["D", "L", "P", "R", "U"]
 }
 
 function registerDefaultCommands(terminal) {
@@ -87,6 +87,11 @@ function registerDefaultCommands(terminal) {
     terminal.registerCmd( "IF", {
         args: [ "conditional", "THEN", "expression", "ELSE", "expression" ],
         callback: ifCmd.bind(terminal),
+        help: "./man/commands.json"
+    }) ;
+    terminal.registerCmd( "INPUT", {
+        args: [ "[-p prompt]", "variableName" ],
+        callback: inputCmd.bind(terminal),
         help: "./man/commands.json"
     }) ;
     terminal.registerCmd( "LIST", {
@@ -230,6 +235,43 @@ async function ifCmd(args) {
 
     this.terminal.status = 0 ;
     return out.toString() ;
+}
+
+async function inputPrompt(terminal) {
+    terminal.saveDisplayInfo() ;
+    terminal.insertCarrot(terminal.terminal.display.carrot) ;
+
+    return new Promise((resolve) => {
+        let userIn = [] ;
+        terminal.initListeners(terminal.parseInput.bind(terminal), userIn, resolve) ;
+    });
+}
+
+async function inputCmd(args) {
+    try {
+        let { flags, name } = await tokenizeCommandLineInput(this, args, { P: { lookForArgument: true }}) ;
+
+        if(name.charAt(0) === "$")
+            return await cmdErr( this,  "Syntax error; variable name cannot begin with $.", 1 ) ;
+        if( !name )
+            return await cmdErr( this,  "Syntax error; missing variable name.", 1 ) ;
+
+        let prompt = flags.P || "INPUT" ;
+        await this.print(prompt + this.terminal.display.prompt) ;
+
+        let input = await inputPrompt(this) ;
+
+        if(flags.U)
+            input = input.toUpperCase() ;
+
+        this.terminal.program.variables[name] = input ;
+        await this.setLocalStorage() ;
+        this.terminal.status = 0 ;
+        return input ;
+    } catch(e) {
+        return await cmdErr( this,  `Runtime error; ${e}.`, 1 ) ;
+    }
+
 }
 
 async function listDeclaredVarsCmd() {

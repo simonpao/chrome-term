@@ -23,3 +23,4 @@
     - `ungroup` a tab group
  - Implement `google` command
    - `google search term` **(done)**
+ - Implement `INPUT` to accept user input and assign it to a variable **(done)**

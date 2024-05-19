@@ -15,6 +15,7 @@
   "GT": "Determine if one number is greater than another",
   "HELP": "Print help text",
   "IF": "Branch on a condition",
+  "INPUT": "Accept user input\nExample:\n    input -p \"Continue? (Y/N)\" userInput\n    Continue? (Y/N)$ Y",
   "LIST": "Print the stored program",
   "LOGARITHM": "Compute the natural logarithm of a number",
   "LT": "Determine if one number is less than another",
