@@ -12,6 +12,7 @@ class ChromeTerminal {
             prompt: "$\u0000",
             carrot: "█",
             color: "white",
+            theme: "default",
             printPath: true,
             path: "/",
             printAccount: true,
@@ -114,6 +115,9 @@ class ChromeTerminal {
                 this.terminal.display.prompt = prompt ;
                 this.terminal.display.printPath = printPath ;
                 this.terminal.display.printAccount = printAccount ;
+                if(typeof this.terminal.display.theme === "undefined")
+                    this.terminal.display.theme = "default";
+                $("#terminal-window").addClass(this.terminal.display.theme) ;
                 this.terminal.x = tmpDisplay.x ;
                 this.terminal.y = tmpDisplay.y ;
                 this.terminal.in = tmpDisplay.in ;
@@ -185,13 +189,36 @@ class ChromeTerminal {
         }
     }
 
+    getColor(color) {
+        switch(this.terminal.display.theme.toUpperCase()) {
+            case "GREEN":
+                return "--green-phosphor" ;
+            case "AMBER":
+                return "--amber-phosphor" ;
+            case "DEFAULT":
+            default:
+                return '--'+color ;
+        }
+    }
+
+    getCharColor( x, y ) {
+        switch(this.terminal.display.theme.toUpperCase()) {
+            case "GREEN":
+            case "AMBER":
+                return this.getColor() ;
+            case "DEFAULT":
+            default:
+                return '--'+this.terminal.display.data[y][x].color ;
+        }
+    }
+
     refresh() {
         for(let y = 0 ; y < this.terminal.rows ; y++) {
             let $charRow = $(`.char-row-${y}`) ;
             for(let x = 0 ; x < this.terminal.columns ; x++) {
                 if( this.terminal.display.data[y] && this.terminal.display.data[y][x] )
                     $charRow.find(`.char-box-${x}`).html(
-                        $(`<span style='color: var(${'--'+this.terminal.display.data[y][x].color});'>${this.terminal.display.data[y][x].char}</span>`)
+                        $(`<span style='color: var(${this.getCharColor(x,y)});'>${this.terminal.display.data[y][x].char}</span>`)
                     ) ;
                 else
                     $charRow.find(`.char-box-${x}`).html("") ;
@@ -257,7 +284,7 @@ class ChromeTerminal {
                     this.terminal.display.data[this.terminal.y][this.terminal.x] = new TerminalCharacter(
                         chars[c], color
                     ) ;
-                    $charBox.html($(`<span style='color: var(${'--'+color});'></span>`).text(chars[c])) ;
+                    $charBox.html($(`<span style='color: var(${this.getColor(color)});'></span>`).text(chars[c])) ;
                     await this.incrementCharPos(timeout) ;
                     break ;
             }

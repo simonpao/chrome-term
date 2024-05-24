@@ -24,3 +24,4 @@
  - Implement `google` command
    - `google search term` **(done)**
  - Implement `INPUT` to accept user input and assign it to a variable **(done)**
+ - Implement scrolling or pausing for printing more than 25 rows of text

@@ -12,6 +12,12 @@
     --white: #ffffff;
     --black: #000000;
     --dark: #333333;
+
+    --green-phosphor: #92ff6f;
+    --green-phosphor-bg: #2c362c;
+
+    --amber-phosphor: #fb952f;
+    --amber-phosphor-bg: #4e3e44;
 }
 
 body {
@@ -42,6 +48,14 @@ body.loading {
     font-weight: bold;
     overflow-y: auto;
     overflow-x: hidden;
+}
+
+#terminal-container #terminal-window.green {
+    background-color: var(--green-phosphor-bg);
+}
+
+#terminal-container #terminal-window.amber {
+    background-color: var(--amber-phosphor-bg);
 }
 
 #terminal-container #terminal-window .char-row {

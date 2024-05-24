@@ -162,6 +162,11 @@ function registerDefaultCommands(terminal) {
         callback: systemCmd.bind(terminal),
         help: "./man/commands.json"
     }) ;
+    terminal.registerCmd( "THEME", {
+        args: [ "themeName" ],
+        callback: themeCmd.bind(terminal),
+        help: "./man/commands.json"
+    }) ;
     terminal.registerCmd( "VARS", {
         callback: listDeclaredVarsCmd.bind(terminal),
         help: "./man/commands.json"
@@ -765,7 +770,7 @@ async function systemCmd(args) {
     let out = "" ;
     switch(args[1]?.toUpperCase()) {
         case "LIST":
-            out = "ROWS,COLS,X,Y,STATUS,DEBUG,PROMPT,COLOR,VERSION" ;
+            out = "ROWS,COLS,X,Y,STATUS,DEBUG,PROMPT,COLOR,THEME,VERSION" ;
             await printList( this, out.split(","), "", false ) ;
             return out ;
         case "ROWS":
@@ -783,7 +788,9 @@ async function systemCmd(args) {
         case "PROMPT":
             out = this.terminal.display.prompt ; break ;
         case "COLOR":
-            out = this.terminal.display.color.toUpperCase() ; break ;
+            out = this.terminal.display.color?.toUpperCase() ; break ;
+        case "THEME":
+            out = this.terminal.display.theme?.toUpperCase() ; break ;
         case "VERSION":
             let manifest = await $.getJSON("./manifest.json") ;
             out = `${manifest.name} - version ${manifest.version}\n  ${manifest.description}` ;
@@ -795,6 +802,37 @@ async function systemCmd(args) {
     this.terminal.status = 0 ;
     await this.println( out ) ;
     return out.toString() ;
+}
+
+async function themeCmd(args) {
+    try {
+        let tokens = await tokenizeString(this, args.join(" ")) ;
+        args = await evalTokens(this, tokens.args, tokens.tokens) ;
+    } catch(e) {
+        return await cmdErr( this,  e, 1 ) ;
+    }
+
+    $("#terminal-window").removeClass(this.terminal.display.theme) ;
+
+    if(typeof args[1] === "string") {
+        let theme = args[1].toLowerCase() ;
+        switch(theme) {
+            case "green":
+            case "amber":
+            case "default":
+                this.terminal.display.theme = theme ;
+                $("#terminal-window").addClass(theme) ;
+                this.refresh() ;
+                this.terminal.status = 0 ;
+                return "" ;
+        }
+        return await cmdErr( this,  "Invalid theme selection, available themes are: DEFAULT, GREEN, and AMBER", 1 ) ;
+    }
+
+    this.terminal.status = 0 ;
+    await this.println( `Current theme is: ${this.terminal.display.theme.toUpperCase()}.` ) ;
+    await this.println( `Available themes are: DEFAULT, GREEN, and AMBER` ) ;
+    return "" ;
 }
 
 async function moveCmd(args) {
