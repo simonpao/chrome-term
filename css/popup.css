@@ -54,8 +54,16 @@ body.loading {
     background-color: var(--green-phosphor-bg);
 }
 
+#terminal-container #terminal-window.green .blink {
+    color: var(--green-phosphor);
+}
+
 #terminal-container #terminal-window.amber {
     background-color: var(--amber-phosphor-bg);
+}
+
+#terminal-container #terminal-window.amber .blink {
+    color: var(--amber-phosphor);
 }
 
 #terminal-container #terminal-window .char-row {
