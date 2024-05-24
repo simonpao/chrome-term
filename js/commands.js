@@ -812,16 +812,16 @@ async function themeCmd(args) {
         return await cmdErr( this,  e, 1 ) ;
     }
 
-    $("#terminal-window").removeClass(this.terminal.display.theme) ;
-
     if(typeof args[1] === "string") {
         let theme = args[1].toLowerCase() ;
         switch(theme) {
             case "green":
             case "amber":
             case "default":
+                let $terminalWindow = $("#terminal-window") ;
+                $terminalWindow.removeClass(this.terminal.display.theme) ;
                 this.terminal.display.theme = theme ;
-                $("#terminal-window").addClass(theme) ;
+                $terminalWindow.addClass(theme) ;
                 this.refresh() ;
                 this.terminal.status = 0 ;
                 return "" ;
