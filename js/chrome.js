@@ -1042,6 +1042,7 @@ class ChromeCommands {
         if(items.length === 1)
             return begin + " " + items[0].id ;
         if(items.length > 1) {
+            this.terminal.insertCarrot("") ;
             if(items.length > 100) {
                 await this.terminal.println(`\n${items.length} matches.`) ;
                 await this.terminal.printPrompt(this.terminal.terminal.display.prompt);
@@ -1071,6 +1072,7 @@ class ChromeCommands {
         if(tabs.length === 1)
             return begin + " " + tabs[0][attr] ;
         if(tabs.length > 1) {
+            this.terminal.insertCarrot("") ;
             if(tabs.length > 100) {
                 await this.terminal.println(`\n${tabs.length} matches.`) ;
                 await this.terminal.printPrompt(this.terminal.terminal.display.prompt);
@@ -1120,6 +1122,7 @@ class ChromeCommands {
         if(session.length === 1)
             return begin + " " + session[0][attr] ;
         if(session.length > 1) {
+            this.terminal.insertCarrot("") ;
             if(session.length > 100) {
                 await this.terminal.println(`\n${session.length} matches.`) ;
                 await this.terminal.printPrompt(this.terminal.terminal.display.prompt);
