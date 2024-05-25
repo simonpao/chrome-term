@@ -143,7 +143,7 @@ function registerDefaultCommands(terminal) {
         help: "./man/commands.json"
     }) ;
     terminal.registerCmd( "SAVE", {
-        args: [ "name", "base" ],
+        args: [ "name" ],
         callback: saveCmd.bind(terminal),
         help: "./man/commands.json"
     }) ;
@@ -817,6 +817,7 @@ async function themeCmd(args) {
         switch(theme) {
             case "green":
             case "amber":
+            case "blue":
             case "default":
                 let $terminalWindow = $("#terminal-window") ;
                 $terminalWindow.removeClass(this.terminal.display.theme) ;
@@ -826,12 +827,12 @@ async function themeCmd(args) {
                 this.terminal.status = 0 ;
                 return "" ;
         }
-        return await cmdErr( this,  "Invalid theme selection, available themes are: DEFAULT, GREEN, and AMBER", 1 ) ;
+        return await cmdErr( this,  "Invalid theme selection, available themes are: DEFAULT, BLUE, GREEN, and AMBER", 1 ) ;
     }
 
     this.terminal.status = 0 ;
     await this.println( `Current theme is: ${this.terminal.display.theme.toUpperCase()}.` ) ;
-    await this.println( `Available themes are: DEFAULT, GREEN, and AMBER` ) ;
+    await this.println( `Available themes are: DEFAULT, BLUE, GREEN, and AMBER` ) ;
     return "" ;
 }
 

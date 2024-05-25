@@ -21,6 +21,7 @@
   "LT": "Determine if one number is less than another",
   "MOVE": "Move line in stored program",
   "MULTIPLY": "Multiply two numbers",
+  "NEW": "Clear the stored program",
   "PRINT": "Print an expression to the screen",
   "RESET": "Reset the terminal",
   "RND": "Generate a random number",
@@ -30,5 +31,6 @@
   "SQRT": "Find a square root",
   "SUBTRACT": "Subtract two numbers",
   "SYSTEM": "Print a system property",
+  "THEME": "Set the terminal theme to one of: default, blue, green, or amber",
   "VARS": "Print all declared variables"
 }

@@ -18,6 +18,8 @@
 
     --amber-phosphor: #fb952f;
     --amber-phosphor-bg: #4e3e44;
+
+    --sbclient-blue-bg: #000080;
 }
 
 body {
@@ -64,6 +66,10 @@ body.loading {
 
 #terminal-container #terminal-window.amber .blink {
     color: var(--amber-phosphor);
+}
+
+#terminal-container #terminal-window.blue {
+    background-color: var(--sbclient-blue-bg);
 }
 
 #terminal-container #terminal-window .char-row {
