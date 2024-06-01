@@ -17,8 +17,13 @@ function registerDefaultCommands(terminal) {
         help: "./man/commands.json"
     }) ;
     terminal.registerCmd( "ALIAS", {
+        args: [ "action", "aliasName" ],
         callback: aliasCmd.bind(terminal),
-        help: "./man/commands.json"
+        help: {
+            location: "./man/commands.json",
+            hide: false,
+            program: true
+        }
     }) ;
     terminal.registerCmd( "ASSIGN", {
         args: [ "variableValue", "TO", "variableName" ],
@@ -31,11 +36,17 @@ function registerDefaultCommands(terminal) {
     }) ;
     terminal.registerCmd( "CLR", {
         callback: clrCmd.bind(terminal),
-        help: "./man/commands.json"
+        help: {
+            location: "./man/commands.json",
+            hide: true
+        }
     }) ;
     terminal.registerCmd( "CLS", {
         callback: clrCmd.bind(terminal),
-        help: "./man/commands.json"
+        help: {
+            location: "./man/commands.json",
+            hide: true
+        }
     }) ;
     terminal.registerCmd( "COLOR", {
         args: [ "color" ],
@@ -43,9 +54,13 @@ function registerDefaultCommands(terminal) {
         help: "./man/commands.json"
     }) ;
     terminal.registerCmd( "DELETE", {
-        args: [ "line" ],
+        args: [ "lineNumber" ],
         callback: deleteCmd.bind(terminal),
-        help: "./man/commands.json"
+        help: {
+            location: "./man/commands.json",
+            hide: false,
+            program: true
+        }
     }) ;
     terminal.registerCmd( "DIVIDE", {
         args: [ "dividend", "divisor" ],
@@ -71,8 +86,13 @@ function registerDefaultCommands(terminal) {
         help: "./man/commands.json"
     }) ;
     terminal.registerCmd( "GOTO", {
-        args: [ "line-number" ],
-        callback: gotoCmd.bind(terminal)
+        args: [ "lineNumber" ],
+        callback: gotoCmd.bind(terminal),
+        help: {
+            location: "./man/commands.json",
+            hide: true,
+            program: true
+        }
     }) ;
     terminal.registerCmd( "GT", {
         args: [ "operand", "operand" ],
@@ -87,7 +107,11 @@ function registerDefaultCommands(terminal) {
     terminal.registerCmd( "IF", {
         args: [ "conditional", "THEN", "expression", "ELSE", "expression" ],
         callback: ifCmd.bind(terminal),
-        help: "./man/commands.json"
+        help: {
+            location: "./man/commands.json",
+            hide: false,
+            program: true
+        }
     }) ;
     terminal.registerCmd( "INPUT", {
         args: [ "[-p prompt]", "variableName" ],
@@ -97,7 +121,11 @@ function registerDefaultCommands(terminal) {
     terminal.registerCmd( "LIST", {
         args: [ "start", "end" ],
         callback: listCmd.bind(terminal),
-        help: "./man/commands.json"
+        help: {
+            location: "./man/commands.json",
+            hide: false,
+            program: true
+        }
     }) ;
     terminal.registerCmd( "LOGARITHM", {
         args: [ "argument", "base" ],
@@ -110,9 +138,13 @@ function registerDefaultCommands(terminal) {
         help: "./man/commands.json"
     }) ;
     terminal.registerCmd( "MOVE", {
-        args: [ "from", "to" ],
+        args: [ "fromLineNumber", "toLineNumber" ],
         callback: moveCmd.bind(terminal),
-        help: "./man/commands.json"
+        help: {
+            location: "./man/commands.json",
+            hide: false,
+            program: true
+        }
     }) ;
     terminal.registerCmd( "MULTIPLY", {
         args: [ "multiplicand", "multiplier" ],
@@ -121,7 +153,11 @@ function registerDefaultCommands(terminal) {
     }) ;
     terminal.registerCmd( "NEW", {
         callback: newCmd.bind(terminal),
-        help: "./man/commands.json"
+        help: {
+            location: "./man/commands.json",
+            hide: false,
+            program: true
+        }
     }) ;
     terminal.registerCmd( "PRINT", {
         args: [ "text" ],
@@ -135,7 +171,11 @@ function registerDefaultCommands(terminal) {
     }) ;
     terminal.registerCmd( "RUN", {
         callback: runCmd.bind(terminal),
-        help: "./man/commands.json"
+        help: {
+            location: "./man/commands.json",
+            hide: false,
+            program: true
+        }
     }) ;
     terminal.registerCmd( "SETCURSOR", {
         args: [ "x", "y" ],
@@ -145,7 +185,11 @@ function registerDefaultCommands(terminal) {
     terminal.registerCmd( "SAVE", {
         args: [ "name" ],
         callback: saveCmd.bind(terminal),
-        help: "./man/commands.json"
+        help: {
+            location: "./man/commands.json",
+            hide: false,
+            program: true
+        }
     }) ;
     terminal.registerCmd( "SQRT", {
         args: [ "radicand", "base" ],
@@ -165,6 +209,11 @@ function registerDefaultCommands(terminal) {
     terminal.registerCmd( "THEME", {
         args: [ "themeName" ],
         callback: themeCmd.bind(terminal),
+        help: "./man/commands.json"
+    }) ;
+    terminal.registerCmd( "UNASSIGN", {
+        args: [ "variableName" ],
+        callback: unassignCmd.bind(terminal),
         help: "./man/commands.json"
     }) ;
     terminal.registerCmd( "VARS", {
@@ -200,6 +249,27 @@ async function assignmentCmd(args) {
     await this.setLocalStorage() ;
     this.terminal.status = 0 ;
     return value ;
+}
+
+async function unassignCmd(args) {
+    try {
+        let tokens = await tokenizeString(this, args.join(" ")) ;
+        args = await evalTokens(this, tokens.args, tokens.tokens) ;
+    } catch(e) {
+        return await cmdErr( this,  `Runtime error; ${e}.`, 1 ) ;
+    }
+
+    let name = args[1] ;
+    if(!Object.keys(this.terminal.program.variables).includes(name)) {
+        let out = `Variable "${name}" does not exist.`
+        await this.println( out ) ;
+        return out ;
+    }
+
+    delete this.terminal.program.variables[name] ;
+    await this.setLocalStorage() ;
+    this.terminal.status = 0 ;
+    return "" ;
 }
 
 async function ifCmd(args) {
@@ -483,10 +553,18 @@ async function helpCmd(args) {
             let out = "" ;
             if( this.terminal.registeredCmd[cmd].help ) {
                 try {
-                    let helpText = await $.getJSON(this.terminal.registeredCmd[cmd].help);
-                    out += helpText[cmd];
+                    let location = this.terminal.registeredCmd[cmd].help ;
+                    if(typeof location === "object") {
+                        location = this.terminal.registeredCmd[cmd].help.location ;
+                    }
+                    if(typeof location === "string") {
+                        let helpText = await $.getJSON(location);
+                        out += helpText[cmd] || "Failed to retrieve man file." ;
+                    } else {
+                        out += "Failed to retrieve man file." ;
+                    }
                 } catch(e) {
-                    out += "Failed to retrieve man file."
+                    out += "Failed to retrieve man file." ;
                 }
             }
 
@@ -500,16 +578,41 @@ async function helpCmd(args) {
             this.terminal.status = 0 ;
             await this.println( out ) ;
             return out ;
+        } else if(cmd === "PROGRAM") {
+            let out = "Available commands for use with the stored program are:"
+            await this.println( out ) ;
+            out += await printList( this, Object.keys(this.terminal.registeredCmd).filter((key) => {
+                return this.terminal.registeredCmd[key].help?.program === true ;
+            }), "", false ) ;
+            let tmp = "Specifying a line number followed by the command will update the stored program." ;
+            tmp += " Lines will be executed in order from lowest to highest, ignoring missing line numbers." ;
+            tmp += "\nFor example:" ;
+            tmp += "\n  10 PRINT \"HELLO WORLD!\"" ;
+            tmp += "\n  20 INPUT -U -P \"CONTINUE? (Y/N)\" USERIN" ;
+            tmp += "\n  30 IF (EQUALS $USERIN Y) THEN (GOTO 10)" ;
+            tmp += "\n  40 PRINT \"GOODBYE WORLD!\"" ;
+            tmp += "\n  RUN" ;
+            tmp += "\nIf you want to save the stored program, use the SAVE command. " ;
+            tmp += "This will save the program lines as an alias that can be called using the provided name." ;
+            tmp += "\nFor example: SAVE TESTPROG" ;
+            await this.println( tmp ) ;
+            out += tmp ;
+
+            this.terminal.status = 0 ;
+            return out ;
         } else {
             return await cmdErr( this,  "\"" + args[1] + "\" is not recognized as a valid command.", 1 ) ;
         }
     }
     let out = "Available commands are:"
     await this.println( out ) ;
-    out += await printList( this, Object.keys(this.terminal.registeredCmd), "", false ) ;
+    out += await printList( this, Object.keys(this.terminal.registeredCmd).filter((key) => {
+        return this.terminal.registeredCmd[key].help?.hide !== true ;
+    }), "", false ) ;
     let tmp = "You can also specify a line number and commands to add to the stored program." ;
-    tmp += "\nFor example:"
-    tmp += "\n  10 PRINT HELLO WORLD!"
+    tmp += "\nFor example:" ;
+    tmp += "\n  10 PRINT \"HELLO WORLD!\"" ;
+    tmp += "\nFor more information on the stored program and aliases, type HELP PROGRAM" ;
     await this.println( tmp ) ;
     out += tmp ;
 

@@ -13,9 +13,10 @@
   "EXIT": "Terminate the terminal",
   "EXP": "Exponentiate one number by and exponent",
   "GT": "Determine if one number is greater than another",
+  "GOTO": "Go to a specified line number during stored program execution. Note: does nothing when executed as a standalone command",
   "HELP": "Print help text",
   "IF": "Branch on a condition",
-  "INPUT": "Accept user input\nExample:\n    input -p \"Continue? (Y/N)\" userInput\n    Continue? (Y/N)$ Y",
+  "INPUT": "Accept user input and assign it to a variable\nExample:\n    input -u -p \"Continue? (Y/N)\" userInput\n    Continue? (Y/N)$ Y",
   "LIST": "Print the stored program",
   "LOGARITHM": "Compute the natural logarithm of a number",
   "LT": "Determine if one number is less than another",
@@ -32,5 +33,6 @@
   "SUBTRACT": "Subtract two numbers",
   "SYSTEM": "Print a system property",
   "THEME": "Set the terminal theme to one of: default, blue, green, or amber",
+  "UNASSIGN": "Remove an assigned variable",
   "VARS": "Print all declared variables"
 }
