@@ -10,8 +10,8 @@
     - If last element of path is an existing bookmark, display error unless `-f` option passed
     - If last element of path does not exist, copy bookmark into directory with new name being last element
  - implement a `COPY` command that will copy screen contents to clipboard
- - Separate `HELP` into sections for directory operations, math operations, stored program operations, etc.
-    - Category should be set during `registerCmd()`
+ - Separate `HELP` into sections for directory operations, math operations, stored program operations, etc. **(done)**
+    - Category should be set during `registerCmd()` **(done)**
  - Implement `tabgroup` command
     - `new` tabgroup containing all ungrouped tabs **(done)**
     - `list` active tabgroups **(done)**
@@ -24,4 +24,4 @@
  - Implement `google` command
    - `google search term` **(done)**
  - Implement `INPUT` to accept user input and assign it to a variable **(done)**
- - Implement scrolling or pausing for printing more than 25 rows of text
+ - Implement scrolling or pausing for printing more than 25 rows of text **(done)**

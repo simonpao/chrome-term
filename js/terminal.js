@@ -19,13 +19,17 @@ class ChromeTerminal {
             account: "Chrome",
             data: [],
             cmdHistory: new CommandHistoryStack(),
-            printPrompt: true
+            printPrompt: true,
+            printedLines: 0,
+            autoPauseOnOverflow: true,
+            stopPrinting: false
         },
         program: {
             input: [],
             variables: {},
             suppressOutput: false,
-            aliases: {}
+            aliases: {},
+            executing: false
         },
         registeredCmd: {},
         localStoragePrefix: "chrome-term"
@@ -42,6 +46,7 @@ class ChromeTerminal {
             let tmpProgram = JSON.parse(jsTerminalProgramJson) ;
             if( tmpProgram !== null)
                 this.terminal.program = tmpProgram ;
+            this.terminal.program.executing = false ;
         } catch(e) {}
 
         this.terminal.columns = columns ;
@@ -92,6 +97,12 @@ class ChromeTerminal {
             this.terminal.display.printAccount = true ;
         }
 
+        if(typeof options["autoPauseOnOverflow"] === "boolean") {
+            this.terminal.display.autoPauseOnOverflow = options["autoPauseOnOverflow"] ;
+        } else {
+            this.terminal.display.autoPauseOnOverflow = true ;
+        }
+
         for(let y = 0 ; y < rows ; y++) {
             $("#terminal-window").append(`<div class="char-row char-row-${y}"></div>`) ;
             let $charRow = $(`.char-row-${y}`) ;
@@ -110,11 +121,15 @@ class ChromeTerminal {
                 let prompt = this.terminal.display.prompt ;
                 let printPath = this.terminal.display.printPath ;
                 let printAccount = this.terminal.display.printAccount ;
+                let autoPauseOnOverflow = this.terminal.display.autoPauseOnOverflow ;
                 this.terminal.display = tmpDisplay.display ;
                 this.terminal.display.cmdHistory = new CommandHistoryStack(tmpDisplay.display.cmdHistory) ;
                 this.terminal.display.prompt = prompt ;
                 this.terminal.display.printPath = printPath ;
                 this.terminal.display.printAccount = printAccount ;
+                this.terminal.display.autoPauseOnOverflow = autoPauseOnOverflow ;
+                this.terminal.display.printedLines = 0 ;
+                this.terminal.display.stopPrinting = false ;
                 if(typeof this.terminal.display.theme === "undefined")
                     this.terminal.display.theme = "default";
                 $("#terminal-window").addClass(this.terminal.display.theme) ;
@@ -127,12 +142,37 @@ class ChromeTerminal {
         } catch(e) {}
     }
 
-    insertNewLine() {
+    pauseConfirm() {
+        this.saveDisplayInfo() ;
+        this.insertCarrot(this.terminal.display.carrot) ;
+
+        return new Promise((resolve) => {
+            let userIn = [] ;
+            this.initListeners(this.parseInput.bind(this), userIn, resolve) ;
+        });
+    }
+
+    async pausePrinting() {
+        this.terminal.display.printedLines = 0 ;
+        if(!this.terminal.display.autoPauseOnOverflow) return "" ;
+        await this.print("Continue? (Y/N)" + this.terminal.display.prompt) ;
+        return await this.pauseConfirm() ;
+    }
+
+    async insertNewLine() {
+        this.terminal.display.printedLines++;
         this.terminal.y++ ;
         if( this.terminal.y === this.terminal.rows ) {
             this.scrollTerminalContents() ;
         }
         this.terminal.x = 0 ;
+
+        if(this.terminal.display.printedLines >= this.terminal.rows-1) {
+            let input = await this.pausePrinting() ;
+            this.terminal.display.printedLines = 0 ;
+            if(input.toUpperCase() === "N")
+                this.terminal.display.stopPrinting = true ;
+        }
     }
 
     backspace() {
@@ -229,7 +269,7 @@ class ChromeTerminal {
     async incrementCharPos(timeout) {
         this.terminal.x++ ;
         if(this.terminal.x === this.terminal.columns)
-            this.insertNewLine() ;
+            await this.insertNewLine() ;
         if( timeout > 0 )
             await this.sleep( timeout ) ;
     }
@@ -257,9 +297,16 @@ class ChromeTerminal {
         }
     }
 
+    insertChar(y, x, char) {
+        if(typeof this.terminal.display.data[y] === "undefined")
+            this.terminal.display.data[y] = [] ;
+        this.terminal.display.data[y][x] = char ;
+    }
+
     async print(data, timeout, color) {
         timeout = typeof timeout === "number" && timeout >= 0 ? timeout : this.terminal.defaultTimeout ;
         if(this.terminal.program.suppressOutput) return ;
+        if(this.terminal.display.stopPrinting) return ;
 
         if(typeof color === "undefined")
             color = this.terminal.display.color ;
@@ -267,23 +314,24 @@ class ChromeTerminal {
         let chars = data.split("") ;
 
         for( let c in chars ) {
+            if(this.terminal.display.stopPrinting) return ;
             let $charBox = $(`.char-row-${this.terminal.y} .char-box-${this.terminal.x}`) ;
 
             switch(chars[c]) {
                 case "\n":
-                    this.insertNewLine() ;
+                    await this.insertNewLine() ;
                     break ;
                 case " ":
-                    this.terminal.display.data[this.terminal.y][this.terminal.x] = new TerminalCharacter(
+                    this.insertChar(this.terminal.y, this.terminal.x, new TerminalCharacter(
                         "&nbsp;", color
-                    ) ;
+                    )) ;
                     $charBox.html("&nbsp;") ;
                     await this.incrementCharPos(timeout) ;
                     break ;
                 default:
-                    this.terminal.display.data[this.terminal.y][this.terminal.x] = new TerminalCharacter(
+                    this.insertChar(this.terminal.y, this.terminal.x, new TerminalCharacter(
                         chars[c], color
-                    ) ;
+                    )) ;
                     $charBox.html($(`<span style='color: var(${this.getColor(color)});'></span>`).text(chars[c])) ;
                     await this.incrementCharPos(timeout) ;
                     break ;
@@ -348,6 +396,7 @@ class ChromeTerminal {
                 callback(e.keyCode, e.key, userIn, resolve, $terminalInput.is(":focus"), specialKey);
                 this.saveUserInput(userIn) ;
                 this.saveDisplayInfo() ;
+                if(e.keyCode === 9) e.preventDefault() ;
             }
         }) ;
 
@@ -516,6 +565,9 @@ class ChromeTerminal {
         if( command === "" ) return "" ;
         this.terminal.status = 0 ;
 
+        if(!this.terminal.program.executing)
+            this.terminal.display.printedLines = 0 ;
+
         this.logDebugInfo("Incoming command: " + command) ;
 
         let args = command.split(" ") ;
@@ -523,14 +575,14 @@ class ChromeTerminal {
 
         let cmd = args[0].toUpperCase() ;
         if( typeof this.terminal.registeredCmd[cmd] !== "undefined" ) {
-            if(!this.terminal.program.suppressOutput)
+            if(!this.terminal.program.suppressOutput && !this.terminal.program.executing)
                 this.terminal.display.cmdHistory.stack = command ;
             return await this.terminal.registeredCmd[cmd].callback(args) ;
         }
 
         // Check if it's an alias
         if( typeof this.terminal.program.aliases[cmd] !== "undefined" ) {
-            if(!this.terminal.program.suppressOutput)
+            if(!this.terminal.program.suppressOutput && !this.terminal.program.executing)
                 this.terminal.display.cmdHistory.stack = command ;
             return await run( this, this.terminal.program.aliases[cmd] ) ;
         }
@@ -565,6 +617,7 @@ class ChromeTerminal {
             this.terminal.in = { x: this.terminal.x, y: this.terminal.y } ;
             command = await this.inputText() ;
             let output = await this.processCmd(command) ;
+            this.terminal.display.stopPrinting = false ;
             if(this.returnStatus() !== 0)
                 await this.println("Command returned non-zero status code: " + this.returnStatus()) ;
             this.logDebugInfo("Command output: " + output) ;

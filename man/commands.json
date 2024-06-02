@@ -10,7 +10,7 @@
   "DIVIDE": "Divide two numbers",
   "DOWNLOAD": "Download the stored program",
   "EQUALS": "Determine equality of two values",
-  "EXIT": "Terminate the terminal",
+  "EXIT": "Terminate program execution",
   "EXP": "Exponentiate one number by and exponent",
   "GT": "Determine if one number is greater than another",
   "GOTO": "Go to a specified line number during stored program execution. Note: does nothing when executed as a standalone command",

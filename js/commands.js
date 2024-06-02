@@ -78,7 +78,11 @@ function registerDefaultCommands(terminal) {
     }) ;
     terminal.registerCmd( "EXIT", {
         callback: exitCmd.bind(terminal),
-        help: "./man/commands.json"
+        help: {
+            location: "./man/commands.json",
+            hide: true,
+            program: true
+        }
     }) ;
     terminal.registerCmd( "EXP", {
         args: [ "base", "factor" ],
@@ -593,7 +597,7 @@ async function helpCmd(args) {
             tmp += "\n  40 PRINT \"GOODBYE WORLD!\"" ;
             tmp += "\n  RUN" ;
             tmp += "\nIf you want to save the stored program, use the SAVE command. " ;
-            tmp += "This will save the program lines as an alias that can be called using the provided name." ;
+            tmp += "This will save the program as an alias that can be called using the provided name." ;
             tmp += "\nFor example: SAVE TESTPROG" ;
             await this.println( tmp ) ;
             out += tmp ;
@@ -661,30 +665,46 @@ async function runCmd(args) {
 
 async function run(term, program) {
     let stackLimit = 100 ;
+    term.terminal.program.executing = true ;
     for( let line = 0; line < program.length; line++ ) {
         if(program.hasOwnProperty(line) &&
            program[line] ) {
             if(program[line].toUpperCase().startsWith("RUN") ||
-               program[line].toUpperCase().startsWith("SAVE"))
-                return await cmdErr( term, "Cannot execute control command within a program.", term.returnStatus());
+                program[line].toUpperCase().startsWith("MOVE") ||
+                program[line].toUpperCase().startsWith("DELETE") ||
+                program[line].toUpperCase().startsWith("SAVE")) {
+                term.terminal.program.executing = false ;
+                return await cmdErr(term, "Cannot execute control command within a program.", 1);
+            }
 
             let control = await term.processCmd(program[line]) ;
             if(control?.startsWith("GOTO:")) {
                 line = parseInt( control.split(":")[1] ) ;
 
-                if(!program.hasOwnProperty(line) || !program[line])
-                    return await cmdErr( term,  `Invalid program line ${line} specified.`, 1 ) ;
+                if(!program.hasOwnProperty(line) || !program[line]) {
+                    term.terminal.program.executing = false ;
+                    return await cmdErr(term, `Invalid program line ${line} specified.`, 1);
+                }
 
                 line-- ;
                 stackLimit-- ;
-                if(!stackLimit)
-                    return await cmdErr( term, "Stack limit exceeded.", term.returnStatus());
+                if(!stackLimit) {
+                    term.terminal.program.executing = false ;
+                    return await cmdErr(term, "Stack limit exceeded.", term.returnStatus());
+                }
+            }
+            if(control === "EXIT" || term.terminal.display.stopPrinting) {
+                term.terminal.program.executing = false ;
+                term.terminal.display.stopPrinting = false ;
+                return "" ;
             }
             if(term.returnStatus() !== 0) {
+                term.terminal.program.executing = false ;
                 return await cmdErr( term, "Execution error.", term.returnStatus());
             }
         }
     }
+    term.terminal.program.executing = false ;
 }
 
 async function saveCmd(args) {
@@ -833,8 +853,8 @@ async function clrCmd() {
 }
 
 async function exitCmd() {
-    let out = "Goodbye!" ;
-    await this.println( out ) ;
+    //let out = "Goodbye!" ;
+    //await this.println( out ) ;
     this.terminal.status = 0 ;
     return "EXIT" ;
 }
