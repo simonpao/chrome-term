@@ -22,7 +22,8 @@ class ChromeTerminal {
             printPrompt: true,
             printedLines: 0,
             autoPauseOnOverflow: true,
-            stopPrinting: false
+            stopPrinting: false,
+            paused: false
         },
         program: {
             input: [],
@@ -130,6 +131,7 @@ class ChromeTerminal {
                 this.terminal.display.autoPauseOnOverflow = autoPauseOnOverflow ;
                 this.terminal.display.printedLines = 0 ;
                 this.terminal.display.stopPrinting = false ;
+                this.terminal.display.paused = false ;
                 if(typeof this.terminal.display.theme === "undefined")
                     this.terminal.display.theme = "default";
                 $("#terminal-window").addClass(this.terminal.display.theme) ;
@@ -142,13 +144,42 @@ class ChromeTerminal {
         } catch(e) {}
     }
 
+    async pauseInput(keyCode, char, userIn, resolve) {
+        switch(keyCode) {
+            case 13: // Carriage Return
+                this.removeListeners({ namespace: "pauseInput" }) ;
+                this.insertCarrot("") ;
+                await this.print("\n", 0) ;
+                resolve(userIn.join("")) ;
+                this.saveUserInput([]) ;
+                break ;
+            case 8: // Backspace
+                this.insertCarrot("") ;
+                this.backspace() ;
+                this.insertCarrot(this.terminal.display.carrot);
+                userIn.pop() ;
+                this.saveUserInput(userIn) ;
+                break ;
+            case 89: // Y
+            case 78: // N
+                if (this.isValidAsciiCode(keyCode)) {
+                    userIn.push(char);
+                    this.saveUserInput(userIn) ;
+                    await this.print(char, 0);
+                    this.insertCarrot(this.terminal.display.carrot);
+                }
+                break ;
+        }
+    }
+
     pauseConfirm() {
         this.saveDisplayInfo() ;
         this.insertCarrot(this.terminal.display.carrot) ;
+        this.terminal.display.paused = true ;
 
         return new Promise((resolve) => {
             let userIn = [] ;
-            this.initListeners(this.parseInput.bind(this), userIn, resolve) ;
+            this.initListeners(this.pauseInput.bind(this), userIn, resolve, null, { namespace: "pauseInput" }) ;
         });
     }
 
@@ -156,7 +187,9 @@ class ChromeTerminal {
         this.terminal.display.printedLines = 0 ;
         if(!this.terminal.display.autoPauseOnOverflow) return "" ;
         await this.print("Continue? (Y/N)" + this.terminal.display.prompt) ;
-        return await this.pauseConfirm() ;
+        let input = await this.pauseConfirm() ;
+        this.terminal.display.paused = false ;
+        return input ;
     }
 
     async insertNewLine() {
@@ -387,10 +420,11 @@ class ChromeTerminal {
         this.terminal.in = { x: this.terminal.x, y: this.terminal.y } ;
     }
 
-    initListeners(callback, userIn, resolve, specialKey) {
+    initListeners(callback, userIn, resolve, specialKey, options = {}) {
         let $terminalInput = $("#terminal-input") ;
+        let namespace = options?.namespace || "parseInput" ;
 
-        $("#terminal-container").on("keydown", e => {
+        $("#terminal-container").on(`keydown.${namespace}`, e => {
             if( $terminalInput.val() === "" ) {
                 this.logDebugInfo("e.which = " + e.which + "; e.keyCode = " + e.keyCode);
                 callback(e.keyCode, e.key, userIn, resolve, $terminalInput.is(":focus"), specialKey);
@@ -401,7 +435,7 @@ class ChromeTerminal {
         }) ;
 
         // Mobile workaround
-        $terminalInput.on("input", e => {
+        $terminalInput.on(`input.${namespace}`, e => {
             let chars = $terminalInput.val().split("") ;
             this.logDebugInfo("charToKeyCode(chars[i]) = " + this.charToKeyCode(chars[0]) + "; chars[0] = " + chars[0]) ;
             for(let i in chars) {
@@ -414,9 +448,10 @@ class ChromeTerminal {
 
     }
 
-    removeListeners() {
-        $("#terminal-container").off("keydown") ;
-        $("#terminal-input").off("input") ;
+    removeListeners(options) {
+        let namespace = options?.namespace || "parseInput" ;
+        $("#terminal-container").off(`.${namespace}`) ;
+        $("#terminal-input").off(`.${namespace}`) ;
     }
 
     charToKeyCode(char) {
@@ -437,6 +472,7 @@ class ChromeTerminal {
     }
 
     async parseInput(keyCode, char, userIn, resolve, limit, specialKey) {
+        if(this.terminal.display.paused) return ;
         switch(keyCode) {
             case 13: // Carriage Return
                 this.removeListeners() ;
