@@ -521,6 +521,7 @@ class ChromeTerminal {
      */
     async specialKey(command, userIn, keyCode) {
         let result = "" ;
+        this.terminal.display.printedLines = 0 ;
 
         switch(keyCode) {
             case 9: // Tab
@@ -551,6 +552,7 @@ class ChromeTerminal {
                     }
                 }
 
+                //this.terminal.display.stopPrinting = false ;
                 if(typeof result === "string" && result !== "") {
                     userIn.splice( 0, userIn.length ) ;
                     userIn.push(...result.split("")) ;

@@ -1384,6 +1384,7 @@ async function printList(term, collection, attribute = "title", printPrompt = tr
     out += "\n" ;
     await term.print("\n");
     if(printPrompt) {
+        term.terminal.display.stopPrinting = false ;
         await term.printPrompt(term.terminal.display.prompt);
         term.insertCarrot(term.terminal.display.carrot);
     }
