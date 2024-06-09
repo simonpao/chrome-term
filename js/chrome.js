@@ -447,7 +447,8 @@ class ChromeCommands {
         try {
             let { dir, dirName, term } = this.#findDirAndTerm(name) ;
 
-            term = `^${term.replace(/\*/g, ".*")}` ;
+            term = term.replace(/[#-.]|[[-^]|[?|{}]/g, '\\$&') ;
+            term = `^${term.replace(/\\\*/g, ".*")}` ;
             if(flags.S) term += "$" ;
 
             let set = !dir ?
