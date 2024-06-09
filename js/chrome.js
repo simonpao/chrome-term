@@ -455,14 +455,20 @@ class ChromeCommands {
                 this.#getBookmarkHierarchySubset(dir[0]?.id) ;
             let results = this.#getItemsByRegex(new RegExp(term, "i"), set, "bookmark") ;
 
+            let out = "" ;
             for(let item of results) {
-                if(flags.I)
-                    await this.terminal.println( item.id ) ;
-                else
-                    await this.terminal.println( `~${this.#constructPath(item.id)}` ) ;
+                if(flags.I) {
+                    out += (out === "" ? "" : "\n") + item.id ;
+                    await this.terminal.println(item.id);
+                }
+                else {
+                    let fullPath = `~${this.#constructPath(item.id)}` ;
+                    out += (out === "" ? "" : "\n") + fullPath ;
+                    await this.terminal.println(fullPath);
+                }
             }
 
-            return "" ;
+            return out ;
         } catch(e) {
             return await cmdErr( this.terminal, e, 1 ) ;
         }
