@@ -450,7 +450,9 @@ class ChromeCommands {
             term = `^${term.replace(/\*/g, ".*")}` ;
             if(flags.S) term += "$" ;
 
-            let set = dir ? this.#getBookmarkHierarchySubset(dir[0]?.parentId) : this.bookmarks ;
+            let set = !dir ?
+                this.#getBookmarkHierarchySubset(this.path.id) :
+                this.#getBookmarkHierarchySubset(dir[0]?.id) ;
             let results = this.#getItemsByRegex(new RegExp(term, "i"), set, "bookmark") ;
 
             for(let item of results) {
@@ -1752,7 +1754,19 @@ class ChromeCommands {
     }
 
     #getBookmarkHierarchySubset(parentId) {
-        return this.bookmarks ; // TODO
+        if(parentId === "0")
+            return this.bookmarks ;
+
+        let subset = [] ;
+        let thisItem = this.#getItemById(parentId) ;
+        if(thisItem.type === "bookmark")
+            subset.push(thisItem);
+
+        if(thisItem?.children?.length) for(let child of thisItem.children) {
+            subset = [...subset, ...this.#getBookmarkHierarchySubset(child)] ;
+        }
+
+        return subset ;
     }
 
     #processBookmarks(bookmarks) {
@@ -1771,6 +1785,8 @@ class ChromeCommands {
             if(item.url) {
                 obj.url = item.url ;
                 obj.type = "bookmark" ;
+            } else {
+                obj.children = item.children.map(child => child.id) ;
             }
 
             if(Array.isArray(item.children)) {
