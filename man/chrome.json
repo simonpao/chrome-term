@@ -6,6 +6,7 @@
   "RMDIR": "Delete a specified folder",
   "CP": "Copy a bookmark\nFor example:\n - cp Bookmark Name Folder/",
   "MV": "Move a bookmark\nFor example:\n - mv Bookmark Name Folder/",
+  "FIND": "Search for a bookmark. Use asterisk as wildcard.\nUse the -i flag to return bookmark IDs. The -s flag specifies strict search mode.\nFor example:\n - find ~/Bookmarks bar/ *sea*term*\n - find -s *search term\n - find -i search term",
   "TAB": "Manage Chrome tabs\nAvailable actions are:\n - OPEN\n - CLOSE\n - NEW\n - LIST\n - INFO\n - ACTIVATE\nFor example:\n - tab open Bookmark name\n - tab list\n - tab info\nUse -T flag to specify a tabgroup name\n - tab open -t \"Group Name\" Bookmark name",
   "TABGROUP": "Manage tab groups\nAvailable actions are:\n - NEW\n - LIST\nFor example:\n - tabgroup new Group Name\n - tabgroup ls",
   "BOOKMARK": "Manage bookmarks\nAvailable actions are:\n - OPEN\n - NEW\n - INFO\n - EDIT",

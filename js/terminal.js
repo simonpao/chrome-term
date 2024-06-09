@@ -162,6 +162,7 @@ class ChromeTerminal {
                 break ;
             case 89: // Y
             case 78: // N
+                if (userIn.length) return ;
                 if (this.isValidAsciiCode(keyCode)) {
                     userIn.push(char);
                     this.saveUserInput(userIn) ;

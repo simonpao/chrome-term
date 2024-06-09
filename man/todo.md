@@ -26,3 +26,8 @@
  - Implement `INPUT` to accept user input and assign it to a variable **(done)**
  - Implement scrolling or pausing for printing more than 25 rows of text **(done)**
    - Need to fix this with tab completion as pressing enter executes command
+ - Implement `find` command
+   - `find search term` **(done)**
+   - `find "search term"` **(done)**
+   - `find "*search term*"` **(done)**
+   - `find Directory/ "*search term*"`

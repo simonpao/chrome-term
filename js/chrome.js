@@ -69,6 +69,12 @@ class ChromeCommands {
             ontab: this.rmTab.bind(this),
             help: "./man/chrome.json"
         });
+        terminal.registerCmd("FIND", {
+            args: [ "[-is]", "[target-directory]", "search-term" ],
+            callback: this.find.bind(this),
+            ontab: this.findTab.bind(this),
+            help: "./man/chrome.json"
+        });
         terminal.registerCmd("TAB", {
             args: [ "action", "[-i]", "[name (or id with -i flag)]" ],
             callback: this.tab.bind(this),
@@ -428,6 +434,39 @@ class ChromeCommands {
     }
 
     async rmTab(args) {
+        return await this.#insertCompletion(args, "dir", {
+            lookForAction: false, evalTokens: false
+        }) ;
+    }
+
+    async find(args) {
+        let { flags, name } = await this.#tokenizeCommandLineInput(args, {
+            lookForAction: false
+        }) ;
+
+        try {
+            let { dir, dirName, term } = this.#findDirAndTerm(name) ;
+
+            term = `^${term.replace(/\*/g, ".*")}` ;
+            if(flags.S) term += "$" ;
+
+            let set = dir ? this.#getBookmarkHierarchySubset(dir[0]?.parentId) : this.bookmarks ;
+            let results = this.#getItemsByRegex(new RegExp(term, "i"), set, "bookmark") ;
+
+            for(let item of results) {
+                if(flags.I)
+                    await this.terminal.println( item.id ) ;
+                else
+                    await this.terminal.println( `~${this.#constructPath(item.id)}` ) ;
+            }
+
+            return "" ;
+        } catch(e) {
+            return await cmdErr( this.terminal, e, 1 ) ;
+        }
+    }
+
+    async findTab(args) {
         return await this.#insertCompletion(args, "dir", {
             lookForAction: false, evalTokens: false
         }) ;
@@ -1380,6 +1419,40 @@ class ChromeCommands {
         return items ;
     }
 
+    #findDirAndTerm(name) {
+        let items = {
+            term: "",
+            dir: null,
+            dirName: ""
+        } ;
+
+        let dirPaths = name.split(" ") ;
+        let tmpName ;
+        let start = 0 ;
+        if(dirPaths.length > 1) {
+            for(let i = 0 ; i < dirPaths.length ; i++) {
+                tmpName = dirPaths.slice(start, i+1).join(" ") ;
+                let result = this.#findDirectory(tmpName, false) ;
+                if(result.item.length) {
+                    let parts = tmpName.split("/");
+                    items.dir = result.item;
+                    items.dirName = parts[parts.length-1] === "" ? parts[parts.length-2] : parts[parts.length-1] ;
+                    start = i + 1;
+                    i = dirPaths.length - 2;
+                    break ;
+                }
+            }
+        }
+
+        if(items.dir && items.dir[0]?.type !== "dir")
+            throw "target must be a directory." ;
+
+        tmpName = dirPaths.slice(start).join(" ") ;
+        items.term = tmpName ;
+
+        return items ;
+    }
+
     // Tab operations
     async #getAllTabs(filter) {
         return new Promise((resolve, reject) => {
@@ -1648,19 +1721,38 @@ class ChromeCommands {
         ) ;
     }
 
+    #getItemsByRegex(regex, set, type) {
+        set = typeof set === "undefined" ? this.bookmarks : set ;
+
+        if(typeof type === "string")
+            return set.filter(
+                item =>
+                    item.title?.toLowerCase()?.match(regex) &&
+                    item.type === type
+            ) ;
+        return set.filter(
+            item =>
+                item.title?.toLowerCase()?.match(regex)
+        ) ;
+    }
+
     async #tokenizeCommandLineInput(args, options = {}) {
         return await tokenizeCommandLineInput(this.terminal, args, options, ChromeCommands.flags) ;
     }
 
-    #constructPath() {
+    #constructPath(itemId) {
         let path = "" ;
-        let id = this.path.id ;
+        let id = typeof itemId === "undefined" ? this.path.id : itemId ;
         do {
             let item = this.#getItemById(id) ;
-            path = item.title + "/" + path ;
+            path = item.title + (item.type === "dir" ? "/" : "") + path ;
             id = item?.parentId || false ;
         } while(id)
         return path ;
+    }
+
+    #getBookmarkHierarchySubset(parentId) {
+        return this.bookmarks ; // TODO
     }
 
     #processBookmarks(bookmarks) {

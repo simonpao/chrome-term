@@ -40,6 +40,11 @@ Examples include:
    - view details about a bookmark
      - `bookmark info Google`
      - `bookmark info -i 65`
+ - `find`
+   - find a bookmark based on given search term using asterisk (*) as a wildcard
+     - `find Google/ *ana*ics*`
+     - `find -s *analytics`
+     - `find -i *analytics`
  - `history`
    - list recent history
      - `history ls`
