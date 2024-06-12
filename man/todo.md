@@ -21,13 +21,21 @@
     - `open` entire directory as a tab group, either named as directory or with custom name
     - `rename` a tab group 
     - `ungroup` a tab group
- - Implement `google` command
+ - Implement `google` command **(done)**
    - `google search term` **(done)**
  - Implement `INPUT` to accept user input and assign it to a variable **(done)**
  - Implement scrolling or pausing for printing more than 25 rows of text **(done)**
-   - Need to fix this with tab completion as pressing enter executes command
- - Implement `find` command
+   - Need to fix this with tab completion as pressing enter executes command **(done)**
+ - Implement `find` command **(done)**
    - `find search term` **(done)**
    - `find "search term"` **(done)**
    - `find "*search term*"` **(done)**
-   - `find Directory/ "*search term*"`
+   - `find Directory/ "*search term*"` **(done)**
+ - If a variable contains new lines, treat it as an array and process each line individually
+   - e.g. in `tab open (find *term*)`, `find` returns `~/folder/bookmark1\n~/folder/bookmark2` and `tab open` should be processed for both of these
+ - Implement FOR command
+   - Similar to the above, FOR will iterate over each line in a variable
+   - Syntax: `FOR ITEM IN $ARRAY DO (TAB OPEN $ITEM)`
+ - tab list, tabgroup list, etc, should accept asterisk wildcard rather then using `startsWith`
+ - implement -t flag to find a tab
+   - `find -t *tab name*`
