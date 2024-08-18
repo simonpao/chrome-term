@@ -90,7 +90,7 @@ function registerDefaultCommands(terminal) {
         help: "./man/commands.json"
     }) ;
     terminal.registerCmd( "FOR", {
-        args: [ "varName", "IN", "$var", "DO", "command" ],
+        args: [ "varName", "IN", "expression", "DO", "command" ],
         callback: forCmd.bind(terminal),
         help: "./man/commands.json"
     }) ;
