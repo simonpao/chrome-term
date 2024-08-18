@@ -503,7 +503,7 @@ class ChromeCommands {
                     result = bookmark.url ;
                     await this.#openNewTab(bookmark.url, flags.T) ;
                     this.terminal.terminal.status = 0 ;
-                    await this.terminal.println( `Bookmark opened in new tab.` ) ;
+                    await this.terminal.println( `Bookmark ID ${bookmark.id} opened in new tab.` ) ;
                     return result ;
                 }, { errorMsg : `No bookmark specified.` });
             } catch(e) {
@@ -752,7 +752,7 @@ class ChromeCommands {
                     result = bookmark.url ;
                     await this.#openNewTab(bookmark.url, flags.T) ;
                     this.terminal.terminal.status = 0 ;
-                    await this.terminal.println( `Bookmark opened in new tab.` ) ;
+                    await this.terminal.println( `Bookmark ID ${bookmark.id} opened in new tab.` ) ;
                     return result ;
                 }, { errorMsg : `No bookmark specified.` });
             } catch(e) {
