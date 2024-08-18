@@ -70,7 +70,7 @@ class ChromeCommands {
             help: "./man/chrome.json"
         });
         terminal.registerCmd("FIND", {
-            args: [ "[-is]", "[target-directory]", "search-term" ],
+            args: [ "[-ist]", "[target-directory]", "search-term" ],
             callback: this.find.bind(this),
             ontab: this.findTab.bind(this),
             help: "./man/chrome.json"
@@ -451,16 +451,27 @@ class ChromeCommands {
             term = `^${term.replace(/\\\*/g, ".*")}` ;
             if(flags.S) term += "$" ;
 
-            let set = !dir ?
-                this.#getBookmarkHierarchySubset(this.path.id) :
-                this.#getBookmarkHierarchySubset(dir[0]?.id) ;
-            let results = this.#getItemsByRegex(new RegExp(term, "i"), set, "bookmark") ;
+            let results = [] ;
+            if(flags.T) {
+                results = await this.#getAllTabs((item) => {
+                    return !!item.title.match(term) ;
+                }) ;
+            } else {
+                let set = !dir ?
+                    this.#getBookmarkHierarchySubset(this.path.id) :
+                    this.#getBookmarkHierarchySubset(dir[0]?.id) ;
+                results = this.#getItemsByRegex(new RegExp(term, "i"), set, "bookmark") ;
+            }
 
             let out = "" ;
             for(let item of results) {
                 if(flags.I) {
                     out += (out === "" ? "" : "\n") + item.id ;
                     await this.terminal.println(item.id);
+                }
+                else if(flags.T) {
+                    out += (out === "" ? "" : "\n") + item.title ;
+                    await this.terminal.println(item.title);
                 }
                 else {
                     let fullPath = `~${this.#constructPath(item.id)}` ;

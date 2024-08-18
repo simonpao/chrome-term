@@ -37,5 +37,5 @@
    - Similar to the above, FOR will iterate over each line in a variable
    - Syntax: `FOR ITEM IN $ARRAY DO TAB OPEN $ITEM`
  - tab list, tabgroup list, etc, should accept asterisk wildcard rather then using `startsWith`
- - implement -t flag to find a tab
+ - implement -t flag to find a tab **(done)**
    - `find -t *tab name*`
