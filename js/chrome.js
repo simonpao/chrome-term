@@ -488,23 +488,27 @@ class ChromeCommands {
         let result = "" ;
 
         if(ChromeCommands.flags.open.includes(action)) {
-            if(!name)
-                return await cmdErr( this.terminal, `No bookmark specified.`, 1 ) ;
-            let bookmark ;
-            if(flags.I)
-                bookmark = this.#getItemById(name) ;
-            else
-                bookmark = this.#getItemFromPath(name) ;
+            try {
+                return await processArray(name, async (name) => {
+                    let bookmark ;
+                    if(flags.I)
+                        bookmark = this.#getItemById(name) ;
+                    else
+                        bookmark = this.#getItemFromPath(name) ;
 
-            if(!bookmark)
-                return await cmdErr( this.terminal, `Bookmark "${name}" not found.`, 1 ) ;
-            if(bookmark.type !== "bookmark")
-                return await cmdErr( this.terminal, `${name} is not a bookmark.`, 1 ) ;
-            result = bookmark.url ;
-            await this.#openNewTab(bookmark.url, flags.T) ;
-            this.terminal.terminal.status = 0 ;
-            await this.terminal.println( `Bookmark opened in new tab.` ) ;
-            return result ;
+                    if(!bookmark)
+                        return await cmdErr( this.terminal, `Bookmark "${name}" not found.`, 1 ) ;
+                    if(bookmark.type !== "bookmark")
+                        return await cmdErr( this.terminal, `${name} is not a bookmark.`, 1 ) ;
+                    result = bookmark.url ;
+                    await this.#openNewTab(bookmark.url, flags.T) ;
+                    this.terminal.terminal.status = 0 ;
+                    await this.terminal.println( `Bookmark opened in new tab.` ) ;
+                    return result ;
+                }, { errorMsg : `No bookmark specified.` });
+            } catch(e) {
+                return await cmdErr( this.terminal, e, 1 ) ;
+            }
         }
 
         if(ChromeCommands.flags.close.includes(action)) {
@@ -733,23 +737,27 @@ class ChromeCommands {
         let result = "" ;
 
         if(ChromeCommands.flags.open.includes(action)) {
-            if(!name)
-                return await cmdErr( this.terminal, `No bookmark specified.`, 1 ) ;
-            let bookmark ;
-            if(flags.I)
-                bookmark = this.#getItemById(name) ;
-            else
-                bookmark = this.#getItemFromPath(name) ;
+            try {
+                return await processArray(name, async (name) => {
+                    let bookmark ;
+                    if(flags.I)
+                        bookmark = this.#getItemById(name) ;
+                    else
+                        bookmark = this.#getItemFromPath(name) ;
 
-            if(!bookmark)
-                return await cmdErr( this.terminal, `Bookmark "${name}" not found.`, 1 ) ;
-            if(bookmark.type !== "bookmark")
-                return await cmdErr( this.terminal, `${name} is not a bookmark.`, 1 ) ;
-            result = bookmark.url ;
-            await this.#openNewTab(bookmark.url, flags.T) ;
-            this.terminal.terminal.status = 0 ;
-            await this.terminal.println( `Bookmark opened in new tab.` ) ;
-            return result ;
+                    if(!bookmark)
+                        return await cmdErr( this.terminal, `Bookmark "${name}" not found.`, 1 ) ;
+                    if(bookmark.type !== "bookmark")
+                        return await cmdErr( this.terminal, `${name} is not a bookmark.`, 1 ) ;
+                    result = bookmark.url ;
+                    await this.#openNewTab(bookmark.url, flags.T) ;
+                    this.terminal.terminal.status = 0 ;
+                    await this.terminal.println( `Bookmark opened in new tab.` ) ;
+                    return result ;
+                }, { errorMsg : `No bookmark specified.` });
+            } catch(e) {
+                return await cmdErr( this.terminal, e, 1 ) ;
+            }
         }
 
         if(ChromeCommands.flags.new.includes(action) ||

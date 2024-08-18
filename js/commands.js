@@ -1467,3 +1467,16 @@ function getMillisFromDateStr(dateStr) {
         dateStr.replace(/^(\d{4}-\d{2}-\d{2})(-(\d{2}:\d{2})(:\d{2})?)?$/, "$1 $3$4")
     ) ;
 }
+
+async function processArray(data, callback, options) {
+    if(!data || typeof callback !== "function")
+        throw Error(options.errorMsg || "An error occurred while processing the data.") ;
+
+    let array = data.split("\n") ;
+    let results = [] ;
+    for(let i in array) {
+        results[i] = await callback(array[i]) ;
+    }
+
+    return results.join("\n") ;
+}
