@@ -350,11 +350,14 @@ async function forCmd(args) {
         return await cmdErr( this,  "Syntax error; missing variable name.", 1 ) ;
 
     try {
-        return await processArray(args[3], async (value) => {
+        this.terminal.program.executing = true ;
+        let response = await processArray(args[3], async (value) => {
             this.terminal.program.variables[name] = value ;
             await this.setLocalStorage() ;
             await this.processCmd(command) ;
         });
+        this.terminal.program.executing = false ;
+        return response ;
     } catch(e) {
         return await cmdErr( this, e, 1 ) ;
     }
