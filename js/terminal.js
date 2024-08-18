@@ -456,6 +456,7 @@ class ChromeTerminal {
     }
 
     charToKeyCode(char) {
+        if(typeof char === "undefined") return "" ;
         let asciiCode = char.toUpperCase().charCodeAt(0) ;
         if ((asciiCode > 47  && asciiCode < 58) || // number keys
             asciiCode === 32                    || // space bar
