@@ -616,7 +616,8 @@ class ChromeTerminal {
         if( typeof this.terminal.registeredCmd[cmd] !== "undefined" ) {
             if(!this.terminal.program.suppressOutput && !this.terminal.program.executing)
                 this.terminal.display.cmdHistory.stack = command ;
-            return await this.terminal.registeredCmd[cmd].callback(args) ;
+            let response = await this.terminal.registeredCmd[cmd].callback(args) ;
+            return response.toString() ;
         }
 
         // Check if it's an alias
