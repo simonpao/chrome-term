@@ -32,10 +32,10 @@
    - `find "*search term*"` **(done)**
    - `find Directory/ "*search term*"` **(done)**
  - If a variable contains new lines, treat it as an array and process each line individually
-   - e.g. in `tab open (find *term*)`, `find` returns `~/folder/bookmark1\n~/folder/bookmark2` and `tab open` should be processed for both of these
- - Implement FOR command
+   - e.g. in `tab open (find *term*)`, `find` returns `~/folder/bookmark1\n~/folder/bookmark2` and `tab open` should be processed for both of these **(done)**
+ - Implement FOR command **(done)**
    - Similar to the above, FOR will iterate over each line in a variable
-   - Syntax: `FOR ITEM IN $ARRAY DO (TAB OPEN $ITEM)`
+   - Syntax: `FOR ITEM IN $ARRAY DO TAB OPEN $ITEM`
  - tab list, tabgroup list, etc, should accept asterisk wildcard rather then using `startsWith`
  - implement -t flag to find a tab
    - `find -t *tab name*`

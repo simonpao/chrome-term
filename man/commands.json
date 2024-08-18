@@ -12,6 +12,7 @@
   "EQUALS": "Determine equality of two values",
   "EXIT": "Terminate program execution",
   "EXP": "Exponentiate one number by and exponent",
+  "FOR": "Iterate over each line in a variable and execute a command against each",
   "GT": "Determine if one number is greater than another",
   "GOTO": "Go to a specified line number during stored program execution. Note: does nothing when executed as a standalone command",
   "HELP": "Print help text",

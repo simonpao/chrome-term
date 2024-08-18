@@ -89,6 +89,11 @@ function registerDefaultCommands(terminal) {
         callback: exponentCmd.bind(terminal),
         help: "./man/commands.json"
     }) ;
+    terminal.registerCmd( "FOR", {
+        args: [ "varName", "IN", "$var", "DO", "command" ],
+        callback: forCmd.bind(terminal),
+        help: "./man/commands.json"
+    }) ;
     terminal.registerCmd( "GOTO", {
         args: [ "lineNumber" ],
         callback: gotoCmd.bind(terminal),
@@ -314,6 +319,45 @@ async function ifCmd(args) {
 
     this.terminal.status = 0 ;
     return out.toString() ;
+}
+
+async function forCmd(args) {
+    let name = "", command = "", inPos = 0, doPos = 0 ;
+
+    for( let i in args ) {
+        if(args[i]?.toUpperCase() === "IN") inPos = parseInt(i) ;
+        if(args[i]?.toUpperCase() === "DO") doPos = parseInt(i) ;
+    }
+
+    if(inPos === 0)
+        return await cmdErr( this,  "Syntax error; IN argument is required with FOR statement.", 1 ) ;
+    if(doPos === 0)
+        return await cmdErr( this,  "Syntax error; DO argument is required with FOR statement.", 1 ) ;
+
+    command = args.slice(doPos+1).join(" ") ;
+
+    try {
+        let tokens = await tokenizeString(this, args.slice(0, doPos).join(" ")) ;
+        args = await evalTokens(this, tokens.args, tokens.tokens) ;
+    } catch(e) {
+        return await cmdErr( this,  `Runtime error; ${e}.`, 1 ) ;
+    }
+
+    name = args[1] ;
+    if(name.charAt(0) === "$")
+        return await cmdErr( this,  "Syntax error; variable name cannot begin with $.", 1 ) ;
+    if( !name )
+        return await cmdErr( this,  "Syntax error; missing variable name.", 1 ) ;
+
+    try {
+        return await processArray(args[3], async (value) => {
+            this.terminal.program.variables[name] = value ;
+            await this.setLocalStorage() ;
+            await this.processCmd(command) ;
+        });
+    } catch(e) {
+        return await cmdErr( this, e, 1 ) ;
+    }
 }
 
 async function inputPrompt(terminal) {
