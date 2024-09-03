@@ -618,7 +618,7 @@ class ChromeTerminal {
             if(!this.terminal.program.suppressOutput && !this.terminal.program.executing)
                 this.terminal.display.cmdHistory.stack = command ;
             let response = await this.terminal.registeredCmd[cmd].callback(args) ;
-            return response.toString() ;
+            return response?.toString() || "" ;
         }
 
         // Check if it's an alias
