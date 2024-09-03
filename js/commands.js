@@ -752,6 +752,7 @@ async function run(term, program) {
         }
     }
     term.terminal.program.executing = false ;
+    return "" ;
 }
 
 async function saveCmd(args) {
