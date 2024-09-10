@@ -717,9 +717,9 @@ async function run(term, program) {
         if(program.hasOwnProperty(line) &&
            program[line] ) {
             if(program[line].toUpperCase().startsWith("RUN") ||
-                program[line].toUpperCase().startsWith("MOVE") ||
-                program[line].toUpperCase().startsWith("DELETE") ||
-                program[line].toUpperCase().startsWith("SAVE")) {
+               program[line].toUpperCase().startsWith("MOVE") ||
+               program[line].toUpperCase().startsWith("DELETE") ||
+               program[line].toUpperCase().startsWith("SAVE")) {
                 term.terminal.program.executing = false ;
                 return await cmdErr(term, "Cannot execute control command within a program.", 1);
             }
@@ -1403,9 +1403,19 @@ async function printList(term, collection, attribute = "title", printPrompt = tr
     }
 
     let printNumberOfColumns = async cols => {
+        let numSpaces = Math.floor(columns / cols) ;
+        let check = numSpaces * cols ;
+        let additionalSpace = columns - check ;
+
+        let counter = 0 ;
         for(let t of titles) {
-            out += t.text + spaces((columns / cols) - t.len) ;
-            await term.print(t.text + spaces((columns / cols) - t.len), term.terminal.defaultTimeout, getColor(t.type));
+            counter++ ;
+            out += t.text + spaces((numSpaces - t.len) + (counter % cols > 0 ? 0 : additionalSpace)) ;
+            await term.print(
+                t.text + spaces((numSpaces - t.len) + (counter % cols > 0 ? 0 : additionalSpace)),
+                term.terminal.defaultTimeout,
+                getColor(t.type)
+            );
         }
     } ;
 
@@ -1483,7 +1493,8 @@ function padWithZeros(str, totalLen) {
 
 function spaces(num, char = " ") {
     let spaces = "" ;
-    while(num) {
+    num = Math.floor(num) ;
+    while(num > 0) {
         spaces += char ;
         num-- ;
     }
