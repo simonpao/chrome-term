@@ -290,10 +290,14 @@ class ChromeTerminal {
         for(let y = 0 ; y < this.terminal.rows ; y++) {
             let $charRow = $(`.char-row-${y}`) ;
             for(let x = 0 ; x < this.terminal.columns ; x++) {
-                if( this.terminal.display.data[y] && this.terminal.display.data[y][x] )
+                if( this.terminal.display.data[y] && this.terminal.display.data[y][x] ) {
+                    let char = this.terminal.display.data[y][x].char ;
                     $charRow.find(`.char-box-${x}`).html(
-                        $(`<span style='color: var(${this.getCharColor(x,y)});'>${this.terminal.display.data[y][x].char}</span>`)
+                        char === "\u0000"
+                            ? "&nbsp;"
+                            : $(`<span style='color: var(${this.getCharColor(x,y)});'>${char}</span>`)
                     ) ;
+                }
                 else
                     $charRow.find(`.char-box-${x}`).html("") ;
             }
@@ -354,6 +358,13 @@ class ChromeTerminal {
             switch(chars[c]) {
                 case "\n":
                     await this.insertNewLine() ;
+                    break ;
+                case "\u0000":
+                    this.insertChar(this.terminal.y, this.terminal.x, new TerminalCharacter(
+                        "\u0000", color
+                    )) ;
+                    $charBox.html("&nbsp;") ;
+                    await this.incrementCharPos(timeout) ;
                     break ;
                 case " ":
                     this.insertChar(this.terminal.y, this.terminal.x, new TerminalCharacter(

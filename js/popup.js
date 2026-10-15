@@ -8,6 +8,13 @@ try {
         callback: snake.bind(terminal)
     }) ;
 
+    terminal.registerCmd( "BLOCKS", {
+        callback: async (args) => {
+            return new Blocks(terminal).start(args);
+        }
+    }) ;
+
+
     (async () => {
         let bookmarks = await chrome.bookmarks.getTree() ;
         let chromeCmd = new ChromeCommands(terminal, bookmarks) ;
