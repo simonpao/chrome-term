@@ -73,3 +73,77 @@ Directory structure will be based on bookmark directories.
  - `cp` to copy
  - `mv` to move
  - `rm` to remove
+
+# Developer Guide
+
+If you wish to extend the functionality of chrome terminal, the following should 
+help get you started.
+
+## Initialization
+
+The terminal is initialized in ./js/popup.js with the specified number of rows and 
+columns and the specified timeout interval (in milliseconds) that determines 
+the speed at which each character is displayed on the terminal (0 for no delay).
+
+To modify the default settings, 
+
+```javascript
+try {
+    let terminal = new ChromeTerminal(
+        numRows,
+        numColumns,
+        defaultTimeout,
+        {
+            promptChar,          // default: "$"
+            printPath,           // default: true
+            printAccount,        // default: true
+            autoPauseOnOverflow, // default: true
+            debugMode            // default: false
+        }
+    );
+    registerDefaultCommands(terminal);
+    await terminal.startInputLoop() ;
+} catch(e) {
+    console.error(e) ;
+}
+```
+
+## How to Register a New Command
+
+First, define the command handler:
+
+```javascript
+async function testCmd(args) {
+    // Perform the action of the command
+    await this.println(
+        "This is a test command; here are your args: " +
+        args.slice(1).join(", ")
+    );
+    return "";
+}
+```
+
+Next, define a tab-completion function (optional):
+
+```javascript
+async function testCmdTab(args) {
+    // Return the text that should be substituted on the command line
+    return args[0] + " TEST_COMPLETION";
+}
+```
+
+Finally, register the command:
+
+```javascript
+terminal.registerCmd("TEST", {
+    args: ["args"],                   // The argument names this command accepts
+    callback: testCmd.bind(terminal), // The command execution function
+    ontab: testCmdTab.bind(terminal), // The on tab completion handler
+    help: {                           // Command help text and properties
+        location: "./man/help.json",
+        hide: false,
+        program: false
+    }
+});
+```
+
